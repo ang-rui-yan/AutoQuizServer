@@ -1,4 +1,3 @@
-import { Server } from 'socket.io';
 import { EventEmitter } from 'events';
 
 export default class GlobalTimer extends EventEmitter {
@@ -21,7 +20,13 @@ export default class GlobalTimer extends EventEmitter {
 		this.elapsedTime = duration;
 	}
 
+	private cleanupEventHandler(event: string) {
+		this.off(event + ':update', () => {});
+		this.off(event + ':stop', () => {});
+	}
+
 	public startTimer(duration: number, event: string) {
+		this.cleanupEventHandler(event);
 		this.setDuration(duration);
 		if (!this.timerId) {
 			this.timerId = setInterval(() => {
@@ -36,6 +41,7 @@ export default class GlobalTimer extends EventEmitter {
 	}
 
 	public stopTimer(event: string) {
+		this.cleanupEventHandler(event);
 		if (this.timerId) {
 			clearInterval(this.timerId);
 			this.timerId = null;

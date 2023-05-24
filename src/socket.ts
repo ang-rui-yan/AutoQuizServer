@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import http from 'http';
-import { questionController } from './controllers/questionController';
+import { quizController } from './controllers/quizController';
 
 export default (
 	httpServer: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
@@ -17,8 +17,7 @@ export default (
 		socket.on('disconnect', () => {
 			console.log('A user disconnected');
 		});
-
-		questionController(io);
+		quizController(socket);
 	});
 
 	return io;

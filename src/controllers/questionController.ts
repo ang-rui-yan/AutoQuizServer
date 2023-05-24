@@ -1,45 +1,60 @@
-import { Server, Socket } from 'socket.io';
+import { Socket } from 'socket.io';
+import { QuestionData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
+import { EventEmitter } from 'stream';
 
-const globalTimer = GlobalTimer.getInstance();
 const DURATION = 4;
 const WAIT_DURATION = 2;
-const NUMBER_OF_QUESTIONS_IN_TEST = 3;
+const EVENT_ON_QUESTION = 'questionTimer';
+const EVENT_WAIT_QUESTION = 'waitQuestionTimer';
 
-const pointsCalculator = () => {
-	return 0;
-};
+export default class QuestionController extends EventEmitter {
+	private socket: Socket;
+	private question: QuestionData;
+	public globalTimer: GlobalTimer;
 
-export const questionController = (io: Server) => {
-	// we need to have a timer that is async
+	public constructor(socket: Socket, question: QuestionData) {
+		super();
+		this.socket = socket;
+		this.question = question;
+		this.globalTimer = GlobalTimer.getInstance();
+	}
 
-	io.on('connection', (socket: Socket) => {
-		let currentQuestion = 1;
+	private cleanupEventHandlers() {
+		this.socket.removeAllListeners();
+		this.globalTimer.removeAllListeners();
+	}
 
-		const startQuestion = () => {
-			// Show the question
-			socket.emit('showQuestion', currentQuestion);
+	public startQuestion() {
+		// current question will be data of the question
 
-			// Start the timer for the question
-			globalTimer.startTimer(DURATION, 'questionTimer');
+		console.log('Question', this.question);
+		// Show the question
+		this.socket.emit('showQuestion', this.question);
 
-			socket.on('selectOption', (data: any) => {
-				console.log('Received data:', data);
+		// Start the timer for the question
+		this.globalTimer.startTimer(DURATION, EVENT_ON_QUESTION);
 
-				const points = pointsCalculator();
-			});
-		};
+		this.socket.on('selectOption', (data: any) => {
+			console.log('Received data:', data);
+
+			const points = this.calculatePoints();
+			this.emit('questionAnswered');
+		});
 
 		// Listen for timer updates
-		globalTimer.on('questionTimer:update', (elapsedTime) => {
-			socket.emit('questionTimer:update', elapsedTime);
+		this.globalTimer.on(EVENT_ON_QUESTION + ':update', (elapsedTime) => {
+			this.socket.off(EVENT_ON_QUESTION + ':stop', () => {});
+			this.socket.emit(EVENT_ON_QUESTION + ':update', elapsedTime);
 			console.log(elapsedTime);
 		});
 
 		// When the time is up
-		globalTimer.on('questionTimer:stop', () => {
+		this.globalTimer.on(EVENT_ON_QUESTION + ':stop', () => {
+			this.socket.off(EVENT_ON_QUESTION + ':update', () => {});
+
 			// Send the data of user points + top 5 players (and their points + ranking)
-			socket.emit('showQuestionResult', {
+			this.socket.emit('showQuestionResult', {
 				data: 10,
 				top: [
 					{ ranking: 1, publicKey: 'pubkey1', points: 50 },
@@ -50,29 +65,29 @@ export const questionController = (io: Server) => {
 				],
 			});
 
-			if (currentQuestion < NUMBER_OF_QUESTIONS_IN_TEST) {
-				// Start the timer for waiting for the next question
-				globalTimer.startTimer(WAIT_DURATION, 'waitingTimer');
-				currentQuestion += 1;
-			} else {
-				// All questions have been answered
-				console.log('Quiz ended');
-
-				// show overall leaderboard
-			}
+			// Start the timer for waiting for the next question
+			this.globalTimer.startTimer(WAIT_DURATION, EVENT_WAIT_QUESTION);
 		});
 
-		globalTimer.on('waitingTimer:update', (elapsedTime) => {
-			socket.emit('waitingTimer:update', elapsedTime);
+		this.globalTimer.on(EVENT_WAIT_QUESTION + ':update', (elapsedTime) => {
+			this.socket.off(EVENT_WAIT_QUESTION + ':stop', () => {});
+			this.socket.emit(EVENT_WAIT_QUESTION + ':update', elapsedTime);
 			console.log(elapsedTime);
 		});
 
-		globalTimer.on('waitingTimer:stop', () => {
-			// Repeat for the next question
-			startQuestion();
+		this.globalTimer.on(EVENT_WAIT_QUESTION + ':stop', () => {
+			// this.socket.off(EVENT_WAIT_QUESTION + ':update', () => {});
+			this.cleanupEventHandlers();
+			console.log('question ended on question controller');
+			this.emit('questionEnded');
 		});
+	}
 
-		// Start the first question
-		startQuestion();
-	});
-};
+	public calculatePoints() {
+		return 0;
+	}
+
+	public setNewQuestion(question: QuestionData) {
+		this.question = question;
+	}
+}
