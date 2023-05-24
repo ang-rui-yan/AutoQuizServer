@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  OPERATOR
+  ADMIN
+}
+
+model User {
+  publicKey      String      @id @default(dbgenerated())
+  userName       String
+  profilePicture String
+  totalWins      Int         @default(0)
+  totalPoints    Int         @default(0)
+  overallRanking Int?
+  role           Role        @default(USER)
+  quizEntry      QuizEntry[]
+}
+
+model Quiz {
+  quizId        Int         @id @default(autoincrement())
+  name          String
+  week          Int
+  description   String
+  startDateTime DateTime
+  ended         Boolean     @default(false)
+  question      Question[]
+  quizEntry     QuizEntry[]
+}
+
+model Question {
+  questionId Int      @id @default(autoincrement())
+  quizId     Int
+  timeLimit  Int      @default(60)
+  text       String
+  image      String?
+  points     Int      @default(100)
+  option     Option[]
+  quiz       Quiz     @relation(fields: [quizId], references: [quizId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model QuizEntry {
+  quizEntryId  Int    @id @default(autoincrement())
+  publicKey    String
+  quizId       Int
+  points       Int    @default(0)
+  numOfCorrect Int    @default(0)
+  ranking      Int?
+  quiz         Quiz   @relation(fields: [quizId], references: [quizId], onDelete: NoAction, onUpdate: NoAction)
+  user         User   @relation(fields: [publicKey], references: [publicKey], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model Option {
+  optionId   Int      @id @default(autoincrement())
+  questionId Int
+  correct    Boolean
+  text       String
+  question   Question @relation(fields: [questionId], references: [questionId], onDelete: NoAction, onUpdate: NoAction)
+}
