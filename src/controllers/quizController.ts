@@ -20,7 +20,7 @@ let currentQuestionIndex = 0;
 
 export const quizController = (socket: Socket) => {
 	const quiz = globalQuiz.getQuiz();
-
+	console.log(quiz);
 	if (quiz && quiz.server && quiz.client) {
 		quizForServer = quiz.server;
 		quizForClient = quiz.client;

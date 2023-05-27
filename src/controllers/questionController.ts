@@ -31,9 +31,10 @@ export default class QuestionController extends EventEmitter {
 		console.log('Question', this.question);
 		// Show the question
 		this.socket.emit('showQuestion', this.question);
+		const timeLimit = this.question!.timeLimit || DURATION;
 
 		// Start the timer for the question
-		this.globalTimer.startTimer(DURATION, EVENT_ON_QUESTION);
+		this.globalTimer.startTimer(timeLimit, EVENT_ON_QUESTION);
 
 		this.socket.on('selectOption', (data: any) => {
 			console.log('Received data:', data);
@@ -76,7 +77,6 @@ export default class QuestionController extends EventEmitter {
 		});
 
 		this.globalTimer.on(EVENT_WAIT_QUESTION + ':stop', () => {
-			// this.socket.off(EVENT_WAIT_QUESTION + ':update', () => {});
 			this.cleanupEventHandlers();
 			console.log('question ended on question controller');
 			this.emit('questionEnded');

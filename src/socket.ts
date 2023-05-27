@@ -12,7 +12,9 @@ export default (
 	});
 
 	io.on('connection', (socket: Socket) => {
-		console.log('A user connected');
+		const publicKey = socket.handshake.query.publicKey;
+		const userName = socket.handshake.query.userName;
+		console.log('A user connected', publicKey, userName);
 
 		socket.on('disconnect', () => {
 			console.log('A user disconnected');
