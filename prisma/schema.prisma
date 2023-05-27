@@ -15,8 +15,8 @@ enum Role {
 
 model User {
   publicKey      String      @id @default(dbgenerated())
-  userName       String
-  profilePicture String
+  userName       String      @default(dbgenerated("set_username()"))
+  profilePicture String      @default("https://arweave.net/fa2p9FE06MMZr5lsx_B9pNK3XJFGy4X4oYY1dF-In-w?ext=png")
   totalWins      Int         @default(0)
   totalPoints    Int         @default(0)
   overallRanking Int?
@@ -36,14 +36,16 @@ model Quiz {
 }
 
 model Question {
-  questionId Int      @id @default(autoincrement())
-  quizId     Int
+  quizId     Int      
+  questionId Int      
   timeLimit  Int      @default(60)
   text       String
   image      String?
   points     Int      @default(100)
   option     Option[]
-  quiz       Quiz     @relation(fields: [quizId], references: [quizId], onDelete: NoAction, onUpdate: NoAction)
+  quiz       Quiz     @relation(fields: [quizId], references: [quizId], onDelete: Cascade)
+
+  @@id([quizId, questionId])
 }
 
 model QuizEntry {
@@ -53,14 +55,19 @@ model QuizEntry {
   points       Int    @default(0)
   numOfCorrect Int    @default(0)
   ranking      Int?
-  quiz         Quiz   @relation(fields: [quizId], references: [quizId], onDelete: NoAction, onUpdate: NoAction)
-  user         User   @relation(fields: [publicKey], references: [publicKey], onDelete: Cascade, onUpdate: NoAction)
+  quiz         Quiz   @relation(fields: [quizId], references: [quizId], onDelete: Cascade)
+  user         User   @relation(fields: [publicKey], references: [publicKey], onDelete: Cascade)
+
+  @@unique([quizEntryId, quizId, publicKey])
 }
 
 model Option {
-  optionId   Int      @id @default(autoincrement())
+  optionId   Int      
   questionId Int
+  quizId     Int
   correct    Boolean
   text       String
-  question   Question @relation(fields: [questionId], references: [questionId], onDelete: NoAction, onUpdate: NoAction)
+  question   Question @relation(fields: [questionId, quizId], references: [questionId, quizId], onDelete: Cascade)
+
+  @@id([optionId, questionId, quizId])
 }

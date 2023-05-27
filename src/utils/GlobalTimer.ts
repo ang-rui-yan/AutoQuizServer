@@ -3,7 +3,8 @@ import { EventEmitter } from 'events';
 export default class GlobalTimer extends EventEmitter {
 	private static instance: GlobalTimer;
 	private timerId: NodeJS.Timeout | null = null;
-	private elapsedTime = 0;
+	private startTime: number = 0;
+	private remainingTime: number = 0;
 
 	private constructor() {
 		super();
@@ -16,41 +17,46 @@ export default class GlobalTimer extends EventEmitter {
 		return GlobalTimer.instance;
 	}
 
-	private setDuration(duration: number) {
-		this.elapsedTime = duration;
-	}
-
 	private cleanupEventHandler(event: string) {
-		this.off(event + ':update', () => {});
-		this.off(event + ':stop', () => {});
+		this.removeAllListeners(event + ':update');
+		this.removeAllListeners(event + ':stop');
 	}
 
 	public startTimer(duration: number, event: string) {
 		this.cleanupEventHandler(event);
-		this.setDuration(duration);
-		if (!this.timerId) {
-			this.timerId = setInterval(() => {
-				this.emit(event + ':update', this.elapsedTime);
-				if (this.elapsedTime > 0) {
-					this.elapsedTime -= 1;
-				} else {
-					this.stopTimer(event);
-				}
-			}, 1000);
-		}
+
+		this.startTime = Date.now();
+		this.remainingTime = duration;
+
+		this.emit(event + ':update', this.remainingTime);
+
+		this.timerId = setInterval(() => {
+			const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+			this.remainingTime = duration - elapsedTime;
+
+			if (this.remainingTime > 0) {
+				this.emit(event + ':update', this.remainingTime);
+			} else {
+				this.stopTimer(event);
+			}
+		}, 1000);
 	}
 
 	public stopTimer(event: string) {
 		this.cleanupEventHandler(event);
+
 		if (this.timerId) {
 			clearInterval(this.timerId);
+
 			this.timerId = null;
-			this.elapsedTime = 0;
-			this.emit(event + ':stop', this.elapsedTime);
+			this.remainingTime = 0;
+
+			this.emit(event + ':stop', this.remainingTime);
 		}
 	}
 
-	public getElapsedTime(): number {
-		return this.elapsedTime;
+	public getRemainingTime(): number {
+		const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+		return Math.max(this.remainingTime - elapsedTime, 0);
 	}
 }

@@ -25,6 +25,7 @@ export default class QuestionController extends EventEmitter {
 		this.globalTimer.removeAllListeners();
 	}
 
+	// TODO: Decouple this
 	public startQuestion() {
 		// current question will be data of the question
 
@@ -50,21 +51,13 @@ export default class QuestionController extends EventEmitter {
 			console.log(elapsedTime);
 		});
 
+		// TODO: add proper handling of starting waiting time and showing result
 		// When the time is up
 		this.globalTimer.on(EVENT_ON_QUESTION + ':stop', () => {
 			this.socket.off(EVENT_ON_QUESTION + ':update', () => {});
 
 			// Send the data of user points + top 5 players (and their points + ranking)
-			this.socket.emit('showQuestionResult', {
-				data: 10,
-				top: [
-					{ ranking: 1, publicKey: 'pubkey1', points: 50 },
-					{ ranking: 2, publicKey: 'pubkey2', points: 45 },
-					{ ranking: 3, publicKey: 'pubkey3', points: 43 },
-					{ ranking: 4, publicKey: 'pubkey4', points: 42 },
-					{ ranking: 5, publicKey: 'pubkey5', points: 40 },
-				],
-			});
+			this.socket.emit('showQuestionResult', {});
 
 			// Start the timer for waiting for the next question
 			this.globalTimer.startTimer(WAIT_DURATION, EVENT_WAIT_QUESTION);
@@ -83,6 +76,8 @@ export default class QuestionController extends EventEmitter {
 		});
 	}
 
+	// TODO: Add proper scoring
+	// Might consider to separate this logic
 	public calculatePoints() {
 		return 0;
 	}

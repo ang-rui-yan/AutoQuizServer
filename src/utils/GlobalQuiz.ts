@@ -1,7 +1,8 @@
 import { EventEmitter } from 'events';
-import { QuizAdminData, QuizData } from '../../../client/Trivia-Terrior/types/quizTypes';
-import prisma from '../prisma/client';
+import { QuizAdminData } from '../../../client/Trivia-Terrior/types/quizTypes';
+import prisma from '../../prisma/client';
 
+// TODO: Since i am using event emitter, make sure of it or remove
 export default class GlobalQuiz extends EventEmitter {
 	private static instance: GlobalQuiz;
 	private quizForServer: QuizAdminData | null = null;
@@ -9,10 +10,11 @@ export default class GlobalQuiz extends EventEmitter {
 
 	private constructor() {
 		super();
-		this.setQuiz()
+		this.loadQuiz()
 			.then((quiz) => {
-				this.quizForServer = quiz![0];
-				this.quizForClient = quiz![1];
+				if (quiz) {
+					({ server: this.quizForServer, client: this.quizForClient } = quiz);
+				}
 			})
 			.catch((error) => {
 				console.error('Error fetching upcoming quiz:', error);
@@ -26,12 +28,14 @@ export default class GlobalQuiz extends EventEmitter {
 		return GlobalQuiz.instance;
 	}
 
-	private async setQuiz(): Promise<[QuizAdminData, QuizAdminData] | null> {
-		const quizForServer = await prisma.quiz.findMany({
+	private async loadQuiz(): Promise<{ server: QuizAdminData; client: QuizAdminData } | null> {
+		const currentDateTime = new Date();
+
+		const quizForServer = await prisma.quiz.findFirst({
 			where: {
 				ended: false,
 				startDateTime: {
-					gte: new Date(),
+					gte: currentDateTime,
 				},
 			},
 			orderBy: {
@@ -47,25 +51,39 @@ export default class GlobalQuiz extends EventEmitter {
 			},
 		});
 
-		if (quizForServer.length == 0) {
+		const quizForClient = await prisma.quiz.findFirst({
+			where: {
+				ended: false,
+				startDateTime: {
+					gte: currentDateTime,
+				},
+			},
+			orderBy: {
+				startDateTime: 'asc',
+			},
+			include: {
+				question: {
+					include: {
+						option: {
+							select: {
+								optionId: true,
+								questionId: true,
+								quizId: true,
+								text: true,
+								correct: false,
+							},
+						},
+					},
+				},
+				quizEntry: true,
+			},
+		});
+
+		if (!quizForServer || !quizForClient) {
 			return null;
 		}
 
-		const quizForClient: QuizAdminData = {
-			...quizForServer[0],
-			question: quizForServer[0].question.map((question) => ({
-				...question,
-				option: question.option.map((option) => {
-					return {
-						optionId: option.optionId,
-						questionId: option.questionId,
-						text: option.text,
-					};
-				}),
-			})),
-		};
-
-		return [quizForServer[0], quizForClient];
+		return { server: quizForServer, client: quizForClient };
 	}
 
 	public getQuiz(): {

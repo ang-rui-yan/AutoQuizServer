@@ -2,7 +2,7 @@ import { Server, Socket } from 'socket.io';
 import GlobalTimer from '../utils/GlobalTimer';
 import GlobalQuiz from '../utils/GlobalQuiz';
 import { QuizAdminData, QuestionData } from '../../../client/Trivia-Terrior/types/quizTypes';
-import QuestionController from './questionController';
+import QuestionController from './QuestionController';
 
 const globalTimer = GlobalTimer.getInstance();
 const globalQuiz = GlobalQuiz.getInstance();
@@ -17,6 +17,8 @@ let quizForServer: QuizAdminData;
 let quizForClient: QuizAdminData;
 let currentQuestion: QuestionController;
 let currentQuestionIndex = 0;
+
+// TODO: Add start question, Add end question, ending quiz, break down
 
 export const quizController = (socket: Socket) => {
 	const quiz = globalQuiz.getQuiz();
