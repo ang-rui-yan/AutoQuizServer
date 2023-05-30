@@ -3,6 +3,7 @@ import dataService from './dataService';
 
 const START_QUIZ_EVENT = 'startQuiz';
 
+// WIP
 export default class CountdownTimer extends EventEmitter {
 	private static instance: CountdownTimer;
 	private intervalId: NodeJS.Timeout | null = null;
@@ -33,11 +34,11 @@ export default class CountdownTimer extends EventEmitter {
 			// Target time has already passed
 			this.stopCountdown();
 
-			this.emit(START_QUIZ_EVENT);
+			// this.emit(START_QUIZ_EVENT);
 		} else {
 			// Start the countdown
 			// clean up
-			this.removeAllListeners();
+			// this.removeAllListeners();
 
 			console.log('Countdown started');
 			console.log('Target DateTime:', new Date(targetDateTime));
