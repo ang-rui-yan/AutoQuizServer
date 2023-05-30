@@ -5,7 +5,6 @@
   "scripts": {
     "server": "nodemon index.ts"
   },
-  "license": "MIT",
   "dependencies": {
     "@prisma/client": "^4.14.0",
     "@types/node": "^20.1.0",
