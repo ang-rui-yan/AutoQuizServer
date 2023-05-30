@@ -6,7 +6,6 @@
     "server": "nodemon --exec ts-node src/index.ts",
     "test-client": "ts-node src/test-client.ts"
   },
-  "license": "MIT",
   "dependencies": {
     "@prisma/client": "^4.14.0",
     "dotenv": "^16.0.3",
