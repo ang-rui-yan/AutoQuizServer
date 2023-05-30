@@ -46,7 +46,6 @@ export default class QuestionController extends EventEmitter {
 
 		// Listen for timer updates
 		this.globalTimer.on(EVENT_ON_QUESTION + ':update', (elapsedTime) => {
-			this.socket.off(EVENT_ON_QUESTION + ':stop', () => {});
 			this.socket.emit(EVENT_ON_QUESTION + ':update', elapsedTime);
 			console.log(elapsedTime);
 		});
@@ -54,8 +53,6 @@ export default class QuestionController extends EventEmitter {
 		// TODO: add proper handling of starting waiting time and showing result
 		// When the time is up
 		this.globalTimer.on(EVENT_ON_QUESTION + ':stop', () => {
-			this.socket.off(EVENT_ON_QUESTION + ':update', () => {});
-
 			// Send the data of user points + top 5 players (and their points + ranking)
 			this.socket.emit('showQuestionResult', {});
 
@@ -64,7 +61,6 @@ export default class QuestionController extends EventEmitter {
 		});
 
 		this.globalTimer.on(EVENT_WAIT_QUESTION + ':update', (elapsedTime) => {
-			this.socket.off(EVENT_WAIT_QUESTION + ':stop', () => {});
 			this.socket.emit(EVENT_WAIT_QUESTION + ':update', elapsedTime);
 			console.log(elapsedTime);
 		});

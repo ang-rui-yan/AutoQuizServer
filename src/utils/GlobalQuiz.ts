@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { QuizAdminData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../prisma/client';
+import dataService from './dataService';
 
 // TODO: Since i am using event emitter, make sure of it or remove
 export default class GlobalQuiz extends EventEmitter {
@@ -31,53 +32,8 @@ export default class GlobalQuiz extends EventEmitter {
 	private async loadQuiz(): Promise<{ server: QuizAdminData; client: QuizAdminData } | null> {
 		const currentDateTime = new Date();
 
-		const quizForServer = await prisma.quiz.findFirst({
-			where: {
-				ended: false,
-				startDateTime: {
-					gte: currentDateTime,
-				},
-			},
-			orderBy: {
-				startDateTime: 'asc',
-			},
-			include: {
-				question: {
-					include: {
-						option: true,
-					},
-				},
-				quizEntry: true,
-			},
-		});
-
-		const quizForClient = await prisma.quiz.findFirst({
-			where: {
-				ended: false,
-				startDateTime: {
-					gte: currentDateTime,
-				},
-			},
-			orderBy: {
-				startDateTime: 'asc',
-			},
-			include: {
-				question: {
-					include: {
-						option: {
-							select: {
-								optionId: true,
-								questionId: true,
-								quizId: true,
-								text: true,
-								correct: false,
-							},
-						},
-					},
-				},
-				quizEntry: true,
-			},
-		});
+		const quizForServer = await dataService.getCurrentQuizForServer(currentDateTime);
+		const quizForClient = await dataService.getCurrentQuizForClient(currentDateTime);
 
 		if (!quizForServer || !quizForClient) {
 			return null;

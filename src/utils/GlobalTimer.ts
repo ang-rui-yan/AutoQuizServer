@@ -23,18 +23,19 @@ export default class GlobalTimer extends EventEmitter {
 	}
 
 	public startTimer(duration: number, event: string) {
-		this.cleanupEventHandler(event);
+		// this.cleanupEventHandler(event);
 
 		this.startTime = Date.now();
 		this.remainingTime = duration;
 
 		this.emit(event + ':update', this.remainingTime);
+		console.log('Started timer for', event);
 
 		this.timerId = setInterval(() => {
 			const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
 			this.remainingTime = duration - elapsedTime;
 
-			if (this.remainingTime > 0) {
+			if (this.remainingTime >= 0) {
 				this.emit(event + ':update', this.remainingTime);
 			} else {
 				this.stopTimer(event);
@@ -43,14 +44,13 @@ export default class GlobalTimer extends EventEmitter {
 	}
 
 	public stopTimer(event: string) {
-		this.cleanupEventHandler(event);
+		// this.cleanupEventHandler(event);
 
 		if (this.timerId) {
 			clearInterval(this.timerId);
 
 			this.timerId = null;
 			this.remainingTime = 0;
-
 			this.emit(event + ':stop', this.remainingTime);
 		}
 	}

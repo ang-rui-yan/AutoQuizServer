@@ -1,10 +1,8 @@
 import { Server, Socket } from 'socket.io';
-import GlobalTimer from '../utils/GlobalTimer';
 import GlobalQuiz from '../utils/GlobalQuiz';
 import { QuizAdminData, QuestionData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import QuestionController from './QuestionController';
 
-const globalTimer = GlobalTimer.getInstance();
 const globalQuiz = GlobalQuiz.getInstance();
 
 const WAIT_DURATION = 3;
