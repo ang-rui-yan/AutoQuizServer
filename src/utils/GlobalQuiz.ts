@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
 import { QuizAdminData } from '../../../client/Trivia-Terrior/types/quizTypes';
-import prisma from '../../prisma/client';
 import dataService from './dataService';
 
 // TODO: Since i am using event emitter, make sure of it or remove

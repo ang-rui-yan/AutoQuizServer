@@ -14,6 +14,7 @@ Fully automated server to run quizzes for multiplayers
    | -> TT
    | server
 1. Do `yarn install` to install dependencies
+1. Generate
 1. Start the server with `yarn server`
 1. Run the client and head to `quiz/testws`
 
