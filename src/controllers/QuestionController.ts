@@ -3,7 +3,7 @@ import { QuestionData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
 import { EventEmitter } from 'stream';
 
-const DURATION = 4;
+const DURATION = 60;
 const WAIT_DURATION = 2;
 const EVENT_ON_QUESTION = 'questionTimer';
 const EVENT_WAIT_QUESTION = 'waitQuestionTimer';

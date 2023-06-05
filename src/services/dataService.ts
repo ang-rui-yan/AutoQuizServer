@@ -1,5 +1,6 @@
 // makes update to the database
 
+import { QuizAdminData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../prisma/client';
 
 async function getUpcomingQuiz() {
@@ -66,6 +67,19 @@ async function getCurrentQuizForClient(currentDateTime: Date) {
 	});
 }
 
+async function getCurrentQuiz() {
+	const currentDateTime = new Date();
+
+	const quizForServer: QuizAdminData | null = await getCurrentQuizForServer(currentDateTime);
+	const quizForClient: QuizAdminData | null = await getCurrentQuizForClient(currentDateTime);
+
+	if (!quizForServer || !quizForClient) {
+		return null;
+	}
+
+	return { server: quizForServer, client: quizForClient };
+}
+
 async function updateDatabase() {
 	console.log('updated database');
 	return;
@@ -74,8 +88,7 @@ async function updateDatabase() {
 const dataService = {
 	getUpcomingQuiz,
 	updateDatabase,
-	getCurrentQuizForServer,
-	getCurrentQuizForClient,
+	getCurrentQuiz,
 };
 
 export default dataService;

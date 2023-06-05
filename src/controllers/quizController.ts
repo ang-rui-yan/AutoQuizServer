@@ -1,9 +1,7 @@
 import { Server, Socket } from 'socket.io';
-import GlobalQuiz from '../utils/GlobalQuiz';
 import { QuizAdminData, QuestionData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import QuestionController from './QuestionController';
-
-const globalQuiz = GlobalQuiz.getInstance();
+import dataService from '../services/dataService';
 
 const WAIT_DURATION = 3;
 
@@ -18,9 +16,9 @@ let currentQuestionIndex = 0;
 
 // TODO: Add start question, Add end question, ending quiz, break down
 
-export const quizController = (socket: Socket) => {
-	const quiz = globalQuiz.getQuiz();
-	console.log(quiz);
+export const quizController = async (socket: Socket) => {
+	const quiz = await dataService.getCurrentQuiz();
+
 	if (quiz && quiz.server && quiz.client) {
 		quizForServer = quiz.server;
 		quizForClient = quiz.client;
