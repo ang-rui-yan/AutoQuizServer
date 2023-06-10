@@ -5,6 +5,7 @@ import { quizController } from './controllers/quizController';
 export default (
 	httpServer: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 ) => {
+	console.log('Booting up socket server.');
 	const io = new Server(httpServer, {
 		cors: {
 			origin: '*',
@@ -13,6 +14,7 @@ export default (
 
 	// Store waiting room participants
 	const waitingRoom: Socket[] = [];
+	console.log('Created waiting room.');
 
 	io.on('connection', (socket: Socket) => {
 		// TODO: Add error handler for null values on handshake

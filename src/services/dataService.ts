@@ -1,10 +1,9 @@
 // makes update to the database
 
-import { QuizAdminData } from '../../../client/Trivia-Terrior/types/quizTypes';
+import { QuizAdminData, QuizData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../prisma/client';
 
-async function getUpcomingQuiz() {
-	console.log('get upcoming quiz');
+async function getUpcomingQuiz(): Promise<QuizData | null> {
 	return await prisma.quiz.findFirst({
 		where: {
 			ended: false,
