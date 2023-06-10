@@ -5,6 +5,7 @@ export default class GlobalTimer extends EventEmitter {
 	private timerId: NodeJS.Timeout | null = null;
 	private startTime: number = 0;
 	private remainingTime: number = 0;
+	private isDevelopment: boolean = true;
 
 	private constructor() {
 		super();
@@ -23,7 +24,7 @@ export default class GlobalTimer extends EventEmitter {
 	}
 
 	public startTimer(duration: number, event: string) {
-		// this.cleanupEventHandler(event);
+		this.removeAllListeners(event + ':stop');
 
 		this.startTime = Date.now();
 		this.remainingTime = duration;
@@ -35,7 +36,11 @@ export default class GlobalTimer extends EventEmitter {
 			const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
 			this.remainingTime = duration - elapsedTime;
 
-			if (this.remainingTime >= 0) {
+			if (this.isDevelopment) {
+				console.log(this.remainingTime);
+			}
+
+			if (this.remainingTime > 0) {
 				this.emit(event + ':update', this.remainingTime);
 			} else {
 				this.stopTimer(event);
@@ -44,7 +49,7 @@ export default class GlobalTimer extends EventEmitter {
 	}
 
 	public stopTimer(event: string) {
-		// this.cleanupEventHandler(event);
+		this.removeAllListeners(event + ':update');
 
 		if (this.timerId) {
 			clearInterval(this.timerId);

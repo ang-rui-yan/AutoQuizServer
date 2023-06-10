@@ -1,6 +1,5 @@
 import { Server, Socket } from 'socket.io';
 import http from 'http';
-import { quizController } from './controllers/quizController';
 
 export default (
 	httpServer: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
@@ -27,13 +26,12 @@ export default (
 		// Emit the current number of participants to the socket
 		socket.emit('waiting-room-count', waitingRoom.length);
 
+		// TODO: Add authentication for only registered users to participate in the quiz
 		console.log(
 			`User ${userName}(${publicKey}) has connected!`,
 			'Waiting room count:',
 			waitingRoom.length
 		);
-
-		// TODO: Add authentication for only registered users to participate in the quiz
 
 		// TODO: When user disconnects, I need to add somewhere to delete their data?
 		socket.on('disconnect', () => {
@@ -47,7 +45,6 @@ export default (
 				waitingRoom.length
 			);
 		});
-		// quizController(socket);
 	});
 
 	return io;

@@ -1,93 +1,80 @@
 // makes update to the database
 
-import { QuizAdminData, QuizData } from '../../../client/Trivia-Terrior/types/quizTypes';
+import { QuizServerData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../prisma/client';
 
-async function getUpcomingQuiz(): Promise<QuizData | null> {
-	return await prisma.quiz.findFirst({
-		where: {
-			ended: false,
-			startDateTime: {
-				gte: new Date(),
-			},
-		},
-	});
-}
-
-async function getCurrentQuizForServer(currentDateTime: Date) {
-	return await prisma.quiz.findFirst({
-		where: {
-			ended: false,
-			startDateTime: {
-				gte: currentDateTime,
-			},
-		},
-		orderBy: {
-			startDateTime: 'asc',
-		},
-		include: {
-			question: {
-				include: {
-					option: true,
+export default class DataService {
+	public static async getUpcomingQuizId(): Promise<number | null> {
+		const quiz = await prisma.quiz.findFirst({
+			where: {
+				ended: false,
+				startDateTime: {
+					gte: new Date(),
 				},
 			},
-			quizEntry: true,
-		},
-	});
-}
-
-async function getCurrentQuizForClient(currentDateTime: Date) {
-	return prisma.quiz.findFirst({
-		where: {
-			ended: false,
-			startDateTime: {
-				gte: currentDateTime,
+			select: {
+				quizId: true,
 			},
-		},
-		orderBy: {
-			startDateTime: 'asc',
-		},
-		include: {
-			question: {
-				include: {
-					option: {
-						select: {
-							optionId: true,
-							questionId: true,
-							quizId: true,
-							text: true,
-							correct: false,
+		});
+		return quiz ? quiz.quizId : null;
+	}
+
+	public static async getCurrentQuizForServer(quizId: number) {
+		const quiz = await prisma.quiz.findFirst({
+			where: {
+				quizId: quizId,
+			},
+			orderBy: {
+				startDateTime: 'asc',
+			},
+			include: {
+				question: {
+					include: {
+						option: true,
+					},
+				},
+				quizEntry: true,
+			},
+		});
+
+		if (!quiz) {
+			throw '';
+		}
+		return quiz;
+	}
+
+	public static async getCurrentQuizForClient(quizId: number) {
+		const quiz = await prisma.quiz.findFirst({
+			where: {
+				quizId: quizId,
+			},
+			orderBy: {
+				startDateTime: 'asc',
+			},
+			include: {
+				question: {
+					include: {
+						option: {
+							select: {
+								optionId: true,
+								questionId: true,
+								quizId: true,
+								text: true,
+								correct: false,
+							},
 						},
 					},
 				},
 			},
-			quizEntry: true,
-		},
-	});
-}
-
-async function getCurrentQuiz() {
-	const currentDateTime = new Date();
-
-	const quizForServer: QuizAdminData | null = await getCurrentQuizForServer(currentDateTime);
-	const quizForClient: QuizAdminData | null = await getCurrentQuizForClient(currentDateTime);
-
-	if (!quizForServer || !quizForClient) {
-		return null;
+		});
+		if (!quiz) {
+			throw '';
+		}
+		return quiz;
 	}
 
-	return { server: quizForServer, client: quizForClient };
+	public static async updateDatabase() {
+		console.log('updated database');
+		return;
+	}
 }
-
-async function updateDatabase() {
-	console.log('updated database');
-	return;
-}
-
-const dataService = {
-	getUpcomingQuiz,
-	updateDatabase,
-	getCurrentQuiz,
-};
-
-export default dataService;
