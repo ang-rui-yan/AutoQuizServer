@@ -1,10 +1,16 @@
 import { Server } from 'socket.io';
 import { QuestionClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
-import QuizModel from './QuizModel';
+import QuizModel from '../models/QuizModel';
+import luxon from 'luxon';
+import { calculatePoints } from '../manager/pointsManager';
+import DataService from '../services/dataService';
 
 const WAITING_DURATION = 5;
 const DEFAULT_QUESTION_DURATION = 10;
+
+const EVENT_QUESTION = 'timer:question';
+const EVENT_WAITING = 'timer:waiting';
 
 export default class QuizController {
 	private io: Server;
@@ -43,23 +49,38 @@ export default class QuizController {
 	private startQuestion(question: QuestionClientData) {
 		// pass to the client, only the question and options without the correct/wrong
 		this.io.sockets.emit('startQuestion', question);
+		const startTime = luxon.DateTime.now();
+		const endTime = startTime.plus({ seconds: question.timeLimit });
+
 		console.log('Start Question', question);
 		this.globalTimer.startTimer(
 			question?.timeLimit || DEFAULT_QUESTION_DURATION,
-			'questionStarted'
+			EVENT_QUESTION
 		);
 
 		// on: question answered + calculate points for those who answered
-		this.io.on('selectOption', (quizId: number, questionId: number, chosenOptionId: number) => {
-			this.quizModel.isAnswerCorrect(
-				this.currentQuestionIndex,
-				quizId,
-				questionId,
-				chosenOptionId
-			);
-		});
+		this.io.on(
+			'selectOption',
+			(publicKey: string, quizId: number, questionId: number, chosenOptionId: number) => {
+				const submittedTime = luxon.DateTime.now();
+				const isAnswerCorrect = this.quizModel.isAnswerCorrect(
+					this.currentQuestionIndex,
+					quizId,
+					questionId,
+					chosenOptionId
+				);
+				const points = calculatePoints(
+					startTime,
+					endTime,
+					submittedTime,
+					question.points,
+					isAnswerCorrect
+				);
+				DataService.updatePointsForCurrentQuiz(publicKey, quizId, questionId, points);
+			}
+		);
 
-		this.globalTimer.on('questionStarted:stop', () => {
+		this.globalTimer.on(EVENT_QUESTION + ':stop', () => {
 			this.endQuestion();
 		});
 	}
@@ -75,7 +96,7 @@ export default class QuizController {
 		this.displayLeaderBoard();
 
 		// stop the waiting timer
-		this.globalTimer.on('waitingTimer:stop', () => {
+		this.globalTimer.on(EVENT_WAITING + ':stop', () => {
 			this.stopWaitingTimer();
 
 			// Start the next question
@@ -86,7 +107,7 @@ export default class QuizController {
 	// emit: waiting timer started
 	private startWaitingTimer() {
 		this.io.sockets.emit('startWaitingTime', WAITING_DURATION);
-		this.globalTimer.startTimer(WAITING_DURATION, 'waitingTimer');
+		this.globalTimer.startTimer(WAITING_DURATION, EVENT_WAITING);
 		console.log('Start waiting time');
 	}
 

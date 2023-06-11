@@ -1,12 +1,12 @@
 import { DateTime } from 'luxon';
 import { QuizServerData, QuizClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
-import QuizController from './QuizController';
-import socketServer from './../socket';
-import dataService from './../services/dataService';
+import QuizController from '../controller/QuizController';
+import socketServer from '../socket';
+import dataService from '../services/dataService';
 import { clearInterval } from 'timers';
 import { Server } from 'socket.io';
 import http from 'http';
-import QuizModel from './QuizModel';
+import QuizModel from '../models/QuizModel';
 
 export const startQuiz = async (
 	server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>

@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import express from 'express';
 import http from 'http';
-import { startQuiz } from './quiz/QuizManager';
+import { startQuiz } from './manager/quizManager';
 
 const app = express();
 const server = http.createServer(app);

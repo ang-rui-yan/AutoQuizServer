@@ -73,6 +73,16 @@ export default class DataService {
 		return quiz;
 	}
 
+	// TODO
+	public static async updatePointsForCurrentQuiz(
+		publicKey: string,
+		quizId: number,
+		questionId: number,
+		points: number
+	) {
+		console.log(`${publicKey} earned ${points} for Quiz ${quizId}, Question ${questionId}`);
+	}
+
 	public static async updateDatabase() {
 		console.log('updated database');
 		return;
