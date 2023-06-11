@@ -2,11 +2,11 @@ import { DateTime } from 'luxon';
 import { QuizServerData, QuizClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import QuizController from '../controller/QuizController';
 import socketServer from '../socket';
-import dataService from '../services/dataService';
 import { clearInterval } from 'timers';
 import { Server } from 'socket.io';
 import http from 'http';
 import QuizModel from '../models/QuizModel';
+import DataService from '../services/dataService';
 
 export const startQuiz = async (
 	server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
@@ -21,12 +21,12 @@ export const startQuiz = async (
 
 	// should be 10 minutes maybe
 	const fetchUpcomingQuizInterval = 2000;
-	const WAITING_ROOM_TIME = 1000;
+	const WAITING_ROOM_TIME = 5000;
 	const isDevelopment = true;
 
 	const fetchNextQuiz = async () => {
 		console.log('Waiting for quiz.');
-		currentQuizId = await dataService.getUpcomingQuizId();
+		currentQuizId = await DataService.getUpcomingQuizId();
 
 		while (!currentQuizId) {
 			console.log(
@@ -35,8 +35,8 @@ export const startQuiz = async (
 			await new Promise((resolve) => setTimeout(resolve, fetchUpcomingQuizInterval));
 		}
 
-		serverQuiz = await dataService.getCurrentQuizForServer(currentQuizId);
-		clientQuiz = await dataService.getCurrentQuizForClient(currentQuizId);
+		serverQuiz = await DataService.getCurrentQuizForServer(currentQuizId);
+		clientQuiz = await DataService.getCurrentQuizForClient(currentQuizId);
 
 		startDateTime = DateTime.fromJSDate(serverQuiz.startDateTime);
 		console.log(

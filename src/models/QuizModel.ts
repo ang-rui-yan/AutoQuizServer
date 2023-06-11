@@ -5,6 +5,7 @@ import {
 	QuestionClientData,
 	QuestionServerData,
 } from '../../../client/Trivia-Terrior/types/quizTypes';
+import DataService from '../services/dataService';
 
 export default class QuizModel {
 	private serverQuiz: QuizServerData;
@@ -34,24 +35,5 @@ export default class QuizModel {
 			return question;
 		}
 		throw 'Cannot find question';
-	}
-
-	public isAnswerCorrect(
-		index: number,
-		quizId: number,
-		questionId: number,
-		chosenOptionId: number
-	): boolean {
-		this.serverQuiz.question[index]?.option.forEach((option) => {
-			if (
-				option.correct &&
-				option.quizId == quizId &&
-				option.questionId == questionId &&
-				option.optionId == chosenOptionId
-			) {
-				return true;
-			}
-		});
-		return false;
 	}
 }

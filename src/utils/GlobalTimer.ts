@@ -23,7 +23,7 @@ export default class GlobalTimer extends EventEmitter {
 		this.removeAllListeners(event + ':stop');
 	}
 
-	public startTimer(duration: number, event: string) {
+	public startTimer(event: string, duration: number) {
 		this.removeAllListeners(event + ':stop');
 
 		this.startTime = Date.now();

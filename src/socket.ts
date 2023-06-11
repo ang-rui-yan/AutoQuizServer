@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import http from 'http';
 
+const EVENT_USER_SELECTED_OPTION = 'selectOption';
 export default (
 	httpServer: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 ) => {
@@ -32,6 +33,10 @@ export default (
 			'Waiting room count:',
 			waitingRoom.length
 		);
+
+		socket.on(EVENT_USER_SELECTED_OPTION, () => {
+			console.log('test');
+		});
 
 		// TODO: When user disconnects, I need to add somewhere to delete their data?
 		socket.on('disconnect', () => {

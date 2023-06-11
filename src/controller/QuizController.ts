@@ -1,16 +1,21 @@
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { QuestionClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
 import QuizModel from '../models/QuizModel';
-import luxon from 'luxon';
+import { DateTime } from 'luxon';
 import { calculatePoints } from '../manager/pointsManager';
 import DataService from '../services/dataService';
 
 const WAITING_DURATION = 5;
 const DEFAULT_QUESTION_DURATION = 10;
 
-const EVENT_QUESTION = 'timer:question';
-const EVENT_WAITING = 'timer:waiting';
+const EVENT_QUESTION_TIMER = 'timer:question';
+const EVENT_WAITING_TIMER = 'timer:waiting';
+const EVENT_START_QUESTION = 'startQuestion';
+const EVENT_STOP_QUESTION = 'stopQuestion';
+const EVENT_USER_SELECTED_OPTION = 'selectOption';
+const EVENT_SHOW_LEADERBOARD = 'showLeaderboard';
+const EVENT_END_QUIZ = 'endQuiz';
 
 export default class QuizController {
 	private io: Server;
@@ -30,6 +35,19 @@ export default class QuizController {
 		// emit the relevant quiz information
 		this.io.sockets.emit('startQuiz');
 
+		// on: question answered + calculate points for those who answered
+		this.io.on('connection', (socket: Socket) => {
+			console.log('inside');
+			socket.on(
+				EVENT_USER_SELECTED_OPTION,
+				(publicKey: string, quizId: number, questionId: number, chosenOptionId: number) => {
+					console.log(`${publicKey} has selected ${chosenOptionId}`);
+					// const points = calculatePoints(quizId, questionId, chosenOptionId);
+					// DataService.updatePointsForCurrentQuiz(publicKey, quizId, questionId, points);
+				}
+			);
+		});
+
 		// starts the first question
 		this.startNextQuestion();
 	}
@@ -48,46 +66,27 @@ export default class QuizController {
 	// emit: question started
 	private startQuestion(question: QuestionClientData) {
 		// pass to the client, only the question and options without the correct/wrong
-		this.io.sockets.emit('startQuestion', question);
-		const startTime = luxon.DateTime.now();
+		this.io.sockets.emit(EVENT_START_QUESTION, question);
+		const startTime = DateTime.now();
 		const endTime = startTime.plus({ seconds: question.timeLimit });
 
 		console.log('Start Question', question);
+		this.io.sockets.emit(EVENT_QUESTION_TIMER, question.timeLimit || DEFAULT_QUESTION_DURATION);
 		this.globalTimer.startTimer(
-			question?.timeLimit || DEFAULT_QUESTION_DURATION,
-			EVENT_QUESTION
+			EVENT_QUESTION_TIMER,
+			question.timeLimit || DEFAULT_QUESTION_DURATION
 		);
 
-		// on: question answered + calculate points for those who answered
-		this.io.on(
-			'selectOption',
-			(publicKey: string, quizId: number, questionId: number, chosenOptionId: number) => {
-				const submittedTime = luxon.DateTime.now();
-				const isAnswerCorrect = this.quizModel.isAnswerCorrect(
-					this.currentQuestionIndex,
-					quizId,
-					questionId,
-					chosenOptionId
-				);
-				const points = calculatePoints(
-					startTime,
-					endTime,
-					submittedTime,
-					question.points,
-					isAnswerCorrect
-				);
-				DataService.updatePointsForCurrentQuiz(publicKey, quizId, questionId, points);
-			}
-		);
-
-		this.globalTimer.on(EVENT_QUESTION + ':stop', () => {
+		this.globalTimer.on(EVENT_QUESTION_TIMER + ':stop', () => {
 			this.endQuestion();
 		});
 	}
 
 	// emit: question ended
 	private endQuestion() {
-		this.io.sockets.emit('stopQuestion');
+		this.io.sockets.emit(EVENT_QUESTION_TIMER + ':stop');
+		this.io.sockets.emit(EVENT_STOP_QUESTION);
+
 		console.log('End question');
 		// start the waiting timer
 		this.startWaitingTimer();
@@ -96,7 +95,7 @@ export default class QuizController {
 		this.displayLeaderBoard();
 
 		// stop the waiting timer
-		this.globalTimer.on(EVENT_WAITING + ':stop', () => {
+		this.globalTimer.on(EVENT_WAITING_TIMER + ':stop', () => {
 			this.stopWaitingTimer();
 
 			// Start the next question
@@ -106,26 +105,26 @@ export default class QuizController {
 
 	// emit: waiting timer started
 	private startWaitingTimer() {
-		this.io.sockets.emit('startWaitingTime', WAITING_DURATION);
-		this.globalTimer.startTimer(WAITING_DURATION, EVENT_WAITING);
+		this.io.sockets.emit(EVENT_WAITING_TIMER, WAITING_DURATION);
+		this.globalTimer.startTimer(EVENT_WAITING_TIMER, WAITING_DURATION);
 		console.log('Start waiting time');
-	}
-
-	// emit: display current leaderboard
-	private displayLeaderBoard() {
-		this.io.sockets.emit('sendLeaderBoard');
-		console.log('Show leaderboard');
 	}
 
 	// emit: waiting timer ended
 	private stopWaitingTimer() {
-		this.io.sockets.emit('stopWaitingTime');
+		this.io.sockets.emit(`${EVENT_WAITING_TIMER}:stop`);
 		console.log('Stop waiting time');
+	}
+
+	// emit: display current leaderboard
+	private displayLeaderBoard() {
+		this.io.sockets.emit(EVENT_SHOW_LEADERBOARD);
+		console.log('Show leaderboard');
 	}
 
 	// emit: end quiz
 	public endQuiz() {
-		this.io.sockets.emit('endQuiz');
+		this.io.sockets.emit(EVENT_END_QUIZ);
 		console.log('End quiz');
 	}
 }

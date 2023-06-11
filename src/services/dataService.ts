@@ -73,6 +73,24 @@ export default class DataService {
 		return quiz;
 	}
 
+	public static async isAnswerCorrect(
+		quizId: number,
+		questionId: number,
+		chosenOptionId: number
+	) {
+		const option = await prisma.option.findFirst({
+			where: {
+				quizId: quizId,
+				questionId: questionId,
+				optionId: chosenOptionId,
+			},
+		});
+		if (!option) {
+			throw '';
+		}
+		return option.correct;
+	}
+
 	// TODO
 	public static async updatePointsForCurrentQuiz(
 		publicKey: string,
