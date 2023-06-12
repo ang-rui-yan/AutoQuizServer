@@ -4,6 +4,7 @@ import {
 	QuizClientData,
 	QuestionClientData,
 	QuestionServerData,
+	QuizData,
 } from '../../../client/Trivia-Terrior/types/quizTypes';
 import DataService from '../services/dataService';
 
@@ -21,6 +22,11 @@ export default class QuizModel {
 		return this.clientQuiz.question.length;
 	}
 
+	// Getter methods for accessing quiz data
+	public getQuizForClient() {
+		return this.clientQuiz;
+	}
+
 	public getQuestionForClient(index: number): QuestionClientData {
 		const question = this.clientQuiz.question[index];
 		if (question) {
@@ -28,7 +34,7 @@ export default class QuizModel {
 		}
 		throw 'Cannot find question';
 	}
-    
+
 	public getQuestionForServer(index: number): QuestionServerData {
 		const question = this.serverQuiz.question[index];
 		if (question) {

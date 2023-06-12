@@ -12,10 +12,13 @@ export const calculatePoints = async (
 	const isAnswerCorrect = await DataService.isAnswerCorrect(quizId, questionId, chosenOptionId);
 	const submittedTime = DateTime.now();
 
-	if (!isAnswerCorrect) return 0;
+	let earnedPoints = 0;
+	if (isAnswerCorrect) {
+		const timeTaken = submittedTime.diff(startTime).milliseconds;
+		timeLimitInSeconds *= 1000;
+		if (timeLimitInSeconds <= 0) return 0;
+		earnedPoints = Math.round(((timeLimitInSeconds - timeTaken) / timeLimitInSeconds) * points);
+	}
 
-	const timeTaken = submittedTime.diff(startTime).milliseconds;
-	if (timeLimitInSeconds <= 0) return 0;
-
-	return ((timeLimitInSeconds - timeTaken) / timeLimitInSeconds) * points;
+	return earnedPoints;
 };

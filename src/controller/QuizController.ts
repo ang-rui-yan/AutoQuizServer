@@ -33,7 +33,7 @@ export default class QuizController {
 	// emit: start quiz
 	public startQuiz() {
 		// emit the relevant quiz information
-		this.io.sockets.emit('startQuiz');
+		this.io.sockets.emit('startQuiz', this.quizModel.getQuizForClient());
 
 		// starts the first question
 		this.startNextQuestion();
@@ -58,8 +58,6 @@ export default class QuizController {
 	private startQuestion(question: QuestionClientData) {
 		// pass to the client, only the question and options without the correct/wrong
 		this.io.sockets.emit(EVENT_START_QUESTION, question);
-		const startTime = DateTime.now();
-		const endTime = startTime.plus({ seconds: question.timeLimit });
 
 		console.log('Start Question', question);
 		this.io.sockets.emit(EVENT_QUESTION_TIMER, question.timeLimit || DEFAULT_QUESTION_DURATION);

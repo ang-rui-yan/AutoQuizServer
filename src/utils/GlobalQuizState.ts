@@ -6,6 +6,7 @@ export default class GlobalState {
 	private currentQuestion: QuestionServerData | null = null;
 	private currentQuestionStartTime: DateTime = DateTime.now();
 	private currentQuestionDuration: number = 0;
+	private DEFAULT_TIME_LIMIT = 60;
 
 	constructor() {
 		if (GlobalState.instance) {
@@ -23,22 +24,20 @@ export default class GlobalState {
 
 	setCurrentQuestion(question: QuestionServerData | null) {
 		this.currentQuestion = question;
+		this.currentQuestionStartTime = DateTime.now();
+		if (this.currentQuestion) {
+			this.currentQuestionDuration = this.currentQuestion.timeLimit;
+		} else {
+			this.currentQuestionDuration = this.DEFAULT_TIME_LIMIT;
+		}
 	}
 
 	getCurrentQuestion() {
 		return this.currentQuestion;
 	}
 
-	setCurrentQuestionStartTime(startTime: DateTime) {
-		this.currentQuestionStartTime = startTime;
-	}
-
 	getCurrentQuestionStartTime() {
 		return this.currentQuestionStartTime;
-	}
-
-	setCurrentQuestionDuration(duration: number) {
-		this.currentQuestionDuration = duration;
 	}
 
 	getCurrentQuestionDuration() {

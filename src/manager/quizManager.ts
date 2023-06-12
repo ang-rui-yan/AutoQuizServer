@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { QuizServerData, QuizClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
-import QuizController from '../controller/QuizController';
+import QuizController from '../controller/quizController';
 import socketServer from '../socket';
 import { clearInterval } from 'timers';
 import { Server } from 'socket.io';
