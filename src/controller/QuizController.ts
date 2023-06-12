@@ -1,10 +1,9 @@
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { QuestionClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
 import QuizModel from '../models/QuizModel';
 import { DateTime } from 'luxon';
-import { calculatePoints } from '../manager/pointsManager';
-import DataService from '../services/dataService';
+import GlobalState from '../utils/GlobalQuizState';
 
 const WAITING_DURATION = 5;
 const DEFAULT_QUESTION_DURATION = 10;
@@ -13,7 +12,6 @@ const EVENT_QUESTION_TIMER = 'timer:question';
 const EVENT_WAITING_TIMER = 'timer:waiting';
 const EVENT_START_QUESTION = 'startQuestion';
 const EVENT_STOP_QUESTION = 'stopQuestion';
-const EVENT_USER_SELECTED_OPTION = 'selectOption';
 const EVENT_SHOW_LEADERBOARD = 'showLeaderboard';
 const EVENT_END_QUIZ = 'endQuiz';
 
@@ -21,12 +19,14 @@ export default class QuizController {
 	private io: Server;
 	private quizModel: QuizModel;
 	private globalTimer: GlobalTimer;
+	private globalQuizState: GlobalState;
 	private currentQuestionIndex: number;
 
 	public constructor(io: Server, quizModel: QuizModel) {
 		this.io = io;
 		this.quizModel = quizModel;
 		this.globalTimer = GlobalTimer.getInstance();
+		this.globalQuizState = GlobalState.getInstance();
 		this.currentQuestionIndex = 0;
 	}
 
@@ -35,19 +35,6 @@ export default class QuizController {
 		// emit the relevant quiz information
 		this.io.sockets.emit('startQuiz');
 
-		// on: question answered + calculate points for those who answered
-		this.io.on('connection', (socket: Socket) => {
-			console.log('inside');
-			socket.on(
-				EVENT_USER_SELECTED_OPTION,
-				(publicKey: string, quizId: number, questionId: number, chosenOptionId: number) => {
-					console.log(`${publicKey} has selected ${chosenOptionId}`);
-					// const points = calculatePoints(quizId, questionId, chosenOptionId);
-					// DataService.updatePointsForCurrentQuiz(publicKey, quizId, questionId, points);
-				}
-			);
-		});
-
 		// starts the first question
 		this.startNextQuestion();
 	}
@@ -55,6 +42,10 @@ export default class QuizController {
 	private startNextQuestion() {
 		if (this.currentQuestionIndex < this.quizModel.getQuestionCount()) {
 			const question = this.quizModel.getQuestionForClient(this.currentQuestionIndex);
+			const questionForServer = this.quizModel.getQuestionForServer(
+				this.currentQuestionIndex
+			);
+			this.globalQuizState.setCurrentQuestion(questionForServer);
 			this.startQuestion(question);
 			this.currentQuestionIndex++;
 		} else {
@@ -84,6 +75,7 @@ export default class QuizController {
 
 	// emit: question ended
 	private endQuestion() {
+		this.globalQuizState.setCurrentQuestion(null);
 		this.io.sockets.emit(EVENT_QUESTION_TIMER + ':stop');
 		this.io.sockets.emit(EVENT_STOP_QUESTION);
 

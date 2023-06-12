@@ -6,7 +6,7 @@ export const calculatePoints = async (
 	questionId: number,
 	chosenOptionId: number,
 	startTime: luxon.DateTime,
-	endTime: luxon.DateTime,
+	timeLimitInSeconds: number,
 	points: number
 ) => {
 	const isAnswerCorrect = await DataService.isAnswerCorrect(quizId, questionId, chosenOptionId);
@@ -14,9 +14,8 @@ export const calculatePoints = async (
 
 	if (!isAnswerCorrect) return 0;
 
-	const interval = endTime.diff(startTime).milliseconds;
 	const timeTaken = submittedTime.diff(startTime).milliseconds;
-	if (interval <= 0) return 0;
+	if (timeLimitInSeconds <= 0) return 0;
 
-	return ((interval - timeTaken) / interval) * points;
+	return ((timeLimitInSeconds - timeTaken) / timeLimitInSeconds) * points;
 };

@@ -1,5 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import http from 'http';
+import DataService from './services/dataService';
+import { calculatePoints } from './manager/pointsManager';
+import GlobalState from './utils/GlobalQuizState';
 
 const EVENT_USER_SELECTED_OPTION = 'selectOption';
 export default (
@@ -15,6 +18,8 @@ export default (
 	// Store waiting room participants
 	const waitingRoom: Socket[] = [];
 	console.log('Created waiting room.');
+
+	const globalState = new GlobalState();
 
 	io.on('connection', (socket: Socket) => {
 		// TODO: Add error handler for null values on handshake
@@ -34,9 +39,35 @@ export default (
 			waitingRoom.length
 		);
 
-		socket.on(EVENT_USER_SELECTED_OPTION, () => {
-			console.log('test');
-		});
+		socket.on(
+			EVENT_USER_SELECTED_OPTION,
+			async (
+				publicKey: string,
+				quizId: number,
+				questionId: number,
+				chosenOptionId: number
+			) => {
+				console.log(`${publicKey} has selected ${chosenOptionId}`);
+				const currentQuestion = globalState.getCurrentQuestion();
+				if (currentQuestion) {
+					await calculatePoints(
+						quizId,
+						questionId,
+						chosenOptionId,
+						globalState.getCurrentQuestionStartTime(),
+						globalState.getCurrentQuestionDuration(),
+						currentQuestion.points
+					).then((points) => {
+						DataService.updatePointsForCurrentQuiz(
+							publicKey,
+							quizId,
+							questionId,
+							points
+						);
+					});
+				}
+			}
+		);
 
 		// TODO: When user disconnects, I need to add somewhere to delete their data?
 		socket.on('disconnect', () => {
