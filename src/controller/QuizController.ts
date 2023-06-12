@@ -2,7 +2,6 @@ import { Server } from 'socket.io';
 import { QuestionClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
 import QuizModel from '../models/QuizModel';
-import { DateTime } from 'luxon';
 import GlobalState from '../utils/GlobalQuizState';
 
 const WAITING_DURATION = 5;

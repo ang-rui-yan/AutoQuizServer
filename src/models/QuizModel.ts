@@ -1,12 +1,9 @@
-import { DateTime } from 'luxon';
 import {
 	QuizServerData,
 	QuizClientData,
 	QuestionClientData,
 	QuestionServerData,
-	QuizData,
 } from '../../../client/Trivia-Terrior/types/quizTypes';
-import DataService from '../services/dataService';
 
 export default class QuizModel {
 	private serverQuiz: QuizServerData;
