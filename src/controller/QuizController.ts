@@ -1,5 +1,8 @@
 import { Server } from 'socket.io';
-import { QuestionClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
+import {
+	OptionServerData,
+	QuestionClientData,
+} from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
 import QuizModel from '../models/QuizModel';
 import GlobalState from '../utils/GlobalQuizState';
@@ -13,6 +16,7 @@ const EVENT_START_QUESTION = 'startQuestion';
 const EVENT_STOP_QUESTION = 'stopQuestion';
 const EVENT_SHOW_LEADERBOARD = 'showLeaderboard';
 const EVENT_END_QUIZ = 'endQuiz';
+const EVENT_SEND_CORRECT_ANSWER = 'sendCorrectOption';
 
 export default class QuizController {
 	private io: Server;
@@ -20,6 +24,7 @@ export default class QuizController {
 	private globalTimer: GlobalTimer;
 	private globalQuizState: GlobalState;
 	private currentQuestionIndex: number;
+	private hasEnded: boolean = false;
 
 	public constructor(io: Server, quizModel: QuizModel) {
 		this.io = io;
@@ -39,17 +44,19 @@ export default class QuizController {
 	}
 
 	private startNextQuestion() {
-		if (this.currentQuestionIndex < this.quizModel.getQuestionCount()) {
-			const question = this.quizModel.getQuestionForClient(this.currentQuestionIndex);
-			const questionForServer = this.quizModel.getQuestionForServer(
-				this.currentQuestionIndex
-			);
-			this.globalQuizState.setCurrentQuestion(questionForServer);
-			this.startQuestion(question);
+		const questionCount = this.quizModel.getQuestionCount();
+		const question = this.quizModel.getQuestionForClient(this.currentQuestionIndex);
+		const questionForServer = this.quizModel.getQuestionForServer(this.currentQuestionIndex);
+		this.globalQuizState.setCurrentQuestion(questionForServer);
+		this.startQuestion(question);
+
+		// check if the next question is the last
+		// if the next question is the last
+		if (this.currentQuestionIndex + 1 < questionCount) {
 			this.currentQuestionIndex++;
 		} else {
-			// No more questions, end the quiz
-			this.endQuiz();
+			this.hasEnded = true;
+			console.log('Next is the last');
 		}
 	}
 
@@ -87,6 +94,11 @@ export default class QuizController {
 		this.globalTimer.on(EVENT_WAITING_TIMER + ':stop', () => {
 			this.stopWaitingTimer();
 
+			if (this.hasEnded) {
+				this.endQuiz();
+				return;
+			}
+
 			// Start the next question
 			this.startNextQuestion();
 		});
@@ -97,12 +109,21 @@ export default class QuizController {
 		this.io.sockets.emit(EVENT_WAITING_TIMER, WAITING_DURATION);
 		this.globalTimer.startTimer(EVENT_WAITING_TIMER, WAITING_DURATION);
 		console.log('Start waiting time');
+		console.log('Send correct answer');
+		this.io.sockets.emit(EVENT_SEND_CORRECT_ANSWER, this.displayCorrectAnswer());
 	}
 
 	// emit: waiting timer ended
 	private stopWaitingTimer() {
 		this.io.sockets.emit(`${EVENT_WAITING_TIMER}:stop`);
 		console.log('Stop waiting time');
+	}
+
+	private displayCorrectAnswer() {
+		const options = this.quizModel.getQuestionForServer(this.currentQuestionIndex).option;
+		const correctOption: OptionServerData | null =
+			options.find((option) => option.correct) || null;
+		return correctOption;
 	}
 
 	// emit: display current leaderboard

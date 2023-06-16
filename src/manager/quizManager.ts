@@ -20,7 +20,7 @@ export const startQuiz = async (
 	let io: Server;
 
 	// should be 10 minutes maybe
-	const fetchUpcomingQuizInterval = 2000;
+	const FETCH_UPCOMING_QUIZ_INTERVAL = 5000;
 	const WAITING_ROOM_TIME = 5000;
 	const isDevelopment = true;
 
@@ -30,9 +30,11 @@ export const startQuiz = async (
 
 		while (!currentQuizId) {
 			console.log(
-				`No upcoming quiz, polling for next in ${fetchUpcomingQuizInterval} minutes.`
+				`No upcoming quiz, polling for next in ${
+					FETCH_UPCOMING_QUIZ_INTERVAL / 1000
+				} seconds.`
 			);
-			await new Promise((resolve) => setTimeout(resolve, fetchUpcomingQuizInterval));
+			await new Promise((resolve) => setTimeout(resolve, FETCH_UPCOMING_QUIZ_INTERVAL));
 		}
 
 		serverQuiz = await DataService.getCurrentQuizForServer(currentQuizId);
@@ -49,12 +51,12 @@ export const startQuiz = async (
 		let countdownToWaitingRoomOpen = countdownToQuizStart - WAITING_ROOM_TIME;
 
 		// count till the room opens
-		console.log(`${countdownToWaitingRoomOpen} milliseconds till waiting room opens.`);
+		console.log(`${countdownToWaitingRoomOpen / 1000} seconds till waiting room opens.`);
 		countdownWaitingTimerId = setInterval(() => {
 			console.log('Initialising socket server.');
 			io = socketServer(server);
 			clearInterval(countdownWaitingTimerId);
-			console.log(`${WAITING_ROOM_TIME} milliseconds till quiz starts.`);
+			console.log(`${WAITING_ROOM_TIME / 1000} seconds till quiz starts.`);
 		}, countdownToWaitingRoomOpen);
 
 		countdownQuizStartTimerId = setInterval(() => {
