@@ -40,24 +40,30 @@ export default class QuizController {
 		this.io.sockets.emit('startQuiz', this.quizModel.getQuizForClient());
 
 		// starts the first question
-		this.startNextQuestion();
+		this.startQuestion(this.getQuestion());
 	}
 
-	private startNextQuestion() {
-		const questionCount = this.quizModel.getQuestionCount();
-		const question = this.quizModel.getQuestionForClient(this.currentQuestionIndex);
+	public getQuestion() {
 		const questionForServer = this.quizModel.getQuestionForServer(this.currentQuestionIndex);
 		this.globalQuizState.setCurrentQuestion(questionForServer);
-		this.startQuestion(question);
 
+		return this.quizModel.getQuestionForClient(this.currentQuestionIndex);
+	}
+
+	private updateQuestionIndex() {
+		const questionCount = this.quizModel.getQuestionCount();
+		this.currentQuestionIndex++;
 		// check if the next question is the last
-		// if the next question is the last
-		if (this.currentQuestionIndex + 1 < questionCount) {
-			this.currentQuestionIndex++;
-		} else {
+		if (this.currentQuestionIndex + 1 >= questionCount) {
 			this.hasEnded = true;
 			console.log('Next is the last');
 		}
+	}
+
+	private startNextQuestion() {
+		this.updateQuestionIndex();
+		const question = this.getQuestion();
+		this.startQuestion(question);
 	}
 
 	// emit: question started
@@ -84,6 +90,10 @@ export default class QuizController {
 		this.io.sockets.emit(EVENT_STOP_QUESTION);
 
 		console.log('End question');
+
+		// show the correct answer
+		this.displayCorrectAnswer();
+
 		// start the waiting timer
 		this.startWaitingTimer();
 
@@ -109,8 +119,6 @@ export default class QuizController {
 		this.io.sockets.emit(EVENT_WAITING_TIMER, WAITING_DURATION);
 		this.globalTimer.startTimer(EVENT_WAITING_TIMER, WAITING_DURATION);
 		console.log('Start waiting time');
-		console.log('Send correct answer');
-		this.io.sockets.emit(EVENT_SEND_CORRECT_ANSWER, this.displayCorrectAnswer());
 	}
 
 	// emit: waiting timer ended
@@ -120,10 +128,11 @@ export default class QuizController {
 	}
 
 	private displayCorrectAnswer() {
+		console.log('Send correct answer');
 		const options = this.quizModel.getQuestionForServer(this.currentQuestionIndex).option;
 		const correctOption: OptionServerData | null =
 			options.find((option) => option.correct) || null;
-		return correctOption;
+		this.io.sockets.emit(EVENT_SEND_CORRECT_ANSWER, correctOption);
 	}
 
 	// emit: display current leaderboard
@@ -134,6 +143,7 @@ export default class QuizController {
 
 	// emit: end quiz
 	public endQuiz() {
+		// TODO: need to emit the final leaderboard
 		this.io.sockets.emit(EVENT_END_QUIZ);
 		console.log('End quiz');
 	}
