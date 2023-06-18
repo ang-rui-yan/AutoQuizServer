@@ -5,24 +5,27 @@ import {
 } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
 import QuizModel from '../models/QuizModel';
-import GlobalState from '../utils/GlobalQuizState';
+import GlobalQuizState from '../utils/GlobalQuizState';
+
+import {
+	EVENT_QUESTION_TIMER,
+	EVENT_WAITING_TIMER,
+	EVENT_START_QUESTION,
+	EVENT_WAITING_ROOM,
+	EVENT_STOP_QUESTION,
+	EVENT_SEND_CORRECT_ANSWER,
+	EVENT_SHOW_LEADERBOARD,
+	EVENT_END_QUIZ,
+} from '../constants/socketEventConstants';
 
 const WAITING_DURATION = 5;
 const DEFAULT_QUESTION_DURATION = 10;
-
-const EVENT_QUESTION_TIMER = 'timer:question';
-const EVENT_WAITING_TIMER = 'timer:waiting';
-const EVENT_START_QUESTION = 'startQuestion';
-const EVENT_STOP_QUESTION = 'stopQuestion';
-const EVENT_SHOW_LEADERBOARD = 'showLeaderboard';
-const EVENT_END_QUIZ = 'endQuiz';
-const EVENT_SEND_CORRECT_ANSWER = 'sendCorrectOption';
 
 export default class QuizController {
 	private io: Server;
 	private quizModel: QuizModel;
 	private globalTimer: GlobalTimer;
-	private globalQuizState: GlobalState;
+	private globalQuizState: GlobalQuizState;
 	private currentQuestionIndex: number;
 	private hasEnded: boolean = false;
 
@@ -30,12 +33,23 @@ export default class QuizController {
 		this.io = io;
 		this.quizModel = quizModel;
 		this.globalTimer = GlobalTimer.getInstance();
-		this.globalQuizState = GlobalState.getInstance();
+		this.globalQuizState = GlobalQuizState.getInstance();
 		this.currentQuestionIndex = 0;
+	}
+
+	private leaveWaitingRoomStatus() {
+		this.globalQuizState.setGameStatus(true);
+		this.io.sockets.to(EVENT_WAITING_ROOM).socketsLeave(EVENT_WAITING_ROOM);
+		console.log('Exiting waiting room status');
+
+		// DO THEY NEED TO JOIN A GAME ROOM?
+		// this.io.sockets.to(EVENT_WAITING_ROOM).socketsJoin();
 	}
 
 	// emit: start quiz
 	public startQuiz() {
+		this.leaveWaitingRoomStatus();
+
 		// emit the relevant quiz information
 		this.io.sockets.emit('startQuiz', this.quizModel.getQuizForClient());
 

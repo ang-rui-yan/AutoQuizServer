@@ -2,9 +2,29 @@ import { Server, Socket } from 'socket.io';
 import http from 'http';
 import DataService from './services/dataService';
 import { calculatePoints } from './manager/pointsManager';
-import GlobalState from './utils/GlobalQuizState';
+import GlobalQuizState from './utils/GlobalQuizState';
+import { WaitingRoom } from '../../client/Trivia-Terrior/types/socketTypes';
 
-const EVENT_USER_SELECTED_OPTION = 'selectOption';
+import {
+	EVENT_WAITING_ROOM,
+	EVENT_USER_SELECTED_OPTION,
+	EVENT_WAITING_ROOM_COUNT,
+	EVENT_USER_CONNECT,
+	EVENT_USER_DISCONNECT,
+} from './constants/socketEventConstants';
+import { DateTime } from 'luxon';
+
+const convertToString = (query: any) => {
+	// Type guard to check if query is a string
+	if (typeof query === 'string') {
+		return query;
+	} else {
+		// Handle the case where query is an array or undefined
+		// For example, you can join the array elements into a string
+		return Array.isArray(query) ? query.join(',') : '';
+	}
+};
+
 export default (
 	httpServer: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 ) => {
@@ -16,28 +36,36 @@ export default (
 	});
 
 	// Store waiting room participants
-	const waitingRoom: Socket[] = [];
-	console.log('Created waiting room.');
+	const waitingRoom: WaitingRoom[] = [];
 
-	const globalState = new GlobalState();
+	const globalState = new GlobalQuizState();
 
-	io.on('connection', (socket: Socket) => {
+	io.on(EVENT_USER_CONNECT, (socket: Socket) => {
 		// TODO: Add error handler for null values on handshake
-		const publicKey = socket.handshake.query.publicKey;
-		const userName = socket.handshake.query.userName;
-
-		// Add the socket to the waiting room
-		waitingRoom.push(socket);
-
-		// Emit the current number of participants to the socket
-		socket.emit('waiting-room-count', waitingRoom.length);
+		const publicKey = convertToString(socket.handshake.query.publicKey);
+		const userName = convertToString(socket.handshake.query.userName);
 
 		// TODO: Add authentication for only registered users to participate in the quiz
-		console.log(
-			`User ${userName}(${publicKey}) has connected!`,
-			'Waiting room count:',
-			waitingRoom.length
-		);
+		console.log(`User ${userName}(${publicKey}) has connected!`);
+
+		console.log(`Game has ${globalState.getGameStatus() ? '' : 'not'} started`);
+		// game has not started
+		if (!globalState.getGameStatus()) {
+			console.log('Created waiting room.');
+			console.log('Enter waiting room status');
+			socket.join(EVENT_WAITING_ROOM);
+
+			// Add the socket to the waiting room
+			waitingRoom.push({
+				publicKey,
+				userName,
+				time: DateTime.now(),
+			});
+
+			// Emit the current number of participants to the socket
+			io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNT, waitingRoom);
+			console.log('Waiting room count:', waitingRoom.length);
+		}
 
 		socket.on(
 			EVENT_USER_SELECTED_OPTION,
@@ -70,16 +98,18 @@ export default (
 		);
 
 		// TODO: When user disconnects, I need to add somewhere to delete their data?
-		socket.on('disconnect', () => {
-			const index = waitingRoom.indexOf(socket);
-			if (index !== -1) {
-				waitingRoom.splice(index, 1);
-			}
-			console.log(
-				`User ${userName}(${publicKey}) disconnected.`,
-				'Waiting room count:',
-				waitingRoom.length
+		socket.on(EVENT_USER_DISCONNECT, () => {
+			const index = waitingRoom.findIndex(
+				(item) => item.publicKey === socket.handshake.query.publicKey
 			);
+
+			if (index !== -1) {
+				// Socket found
+				waitingRoom.splice(index, 1);
+				io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNT, waitingRoom);
+				console.log('Waiting room count:', waitingRoom.length);
+				console.log(`User ${userName}(${publicKey}) disconnected.`);
+			}
 		});
 	});
 

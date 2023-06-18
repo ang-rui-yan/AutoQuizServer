@@ -21,7 +21,8 @@ export const startQuiz = async (
 
 	// should be 10 minutes maybe
 	const FETCH_UPCOMING_QUIZ_INTERVAL = 5000;
-	const WAITING_ROOM_TIME = 5000;
+	const WAITING_ROOM_TIME = 1000 * 60 * 15;
+	const DEVELOPMENT_COUNTDOWN = 1000 * 60 * 20;
 	const isDevelopment = true;
 
 	const fetchNextQuiz = async () => {
@@ -51,12 +52,12 @@ export const startQuiz = async (
 		let countdownToWaitingRoomOpen = countdownToQuizStart - WAITING_ROOM_TIME;
 
 		// count till the room opens
-		console.log(`${countdownToWaitingRoomOpen / 1000} seconds till waiting room opens.`);
+		console.log(`${countdownToWaitingRoomOpen / 60 / 1000} minutes till waiting room opens.`);
 		countdownWaitingTimerId = setInterval(() => {
 			console.log('Initialising socket server.');
 			io = socketServer(server);
 			clearInterval(countdownWaitingTimerId);
-			console.log(`${WAITING_ROOM_TIME / 1000} seconds till quiz starts.`);
+			console.log(`${WAITING_ROOM_TIME / 60 / 1000} minutes till quiz starts.`);
 		}, countdownToWaitingRoomOpen);
 
 		countdownQuizStartTimerId = setInterval(() => {
@@ -68,7 +69,7 @@ export const startQuiz = async (
 
 	const countdownToStart = (isDev = false) => {
 		if (isDev) {
-			return 5000;
+			return DEVELOPMENT_COUNTDOWN;
 		}
 
 		if (startDateTime) {

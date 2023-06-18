@@ -1,25 +1,34 @@
 import { DateTime } from 'luxon';
 import { QuestionServerData } from '../../../client/Trivia-Terrior/types/quizTypes';
 
-export default class GlobalState {
-	private static instance: GlobalState;
+export default class GlobalQuizState {
+	private static instance: GlobalQuizState;
+	private hasGameStarted: boolean = false;
 	private currentQuestion: QuestionServerData | null = null;
 	private currentQuestionStartTime: DateTime = DateTime.now();
 	private currentQuestionDuration: number = 0;
 	private DEFAULT_TIME_LIMIT = 60;
 
 	constructor() {
-		if (GlobalState.instance) {
-			return GlobalState.instance;
+		if (GlobalQuizState.instance) {
+			return GlobalQuizState.instance;
 		}
-		GlobalState.instance = this;
+		GlobalQuizState.instance = this;
 	}
 
-	public static getInstance(): GlobalState {
-		if (!GlobalState.instance) {
-			GlobalState.instance = new GlobalState();
+	public getGameStatus() {
+		return this.hasGameStarted;
+	}
+
+	public setGameStatus(gameStatus: boolean) {
+		this.hasGameStarted = gameStatus;
+	}
+
+	public static getInstance(): GlobalQuizState {
+		if (!GlobalQuizState.instance) {
+			GlobalQuizState.instance = new GlobalQuizState();
 		}
-		return GlobalState.instance;
+		return GlobalQuizState.instance;
 	}
 
 	setCurrentQuestion(question: QuestionServerData | null) {
