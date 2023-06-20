@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { QuizServerData, QuizClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
-import QuizController from '../controller/quizController';
+import QuizController from '../controller/QuizController';
 import socketServer from '../socket';
 import { clearInterval } from 'timers';
 import { Server } from 'socket.io';
@@ -21,8 +21,8 @@ export const startQuiz = async (
 
 	// should be 10 minutes maybe
 	const FETCH_UPCOMING_QUIZ_INTERVAL = 5000;
-	const WAITING_ROOM_TIME = 1000 * 60 * 15;
-	const DEVELOPMENT_COUNTDOWN = 1000 * 60 * 20;
+	const WAITING_ROOM_TIME = 1000 * 60 * 0.1;
+	const DEVELOPMENT_COUNTDOWN = 1000 * 60 * 0.1;
 	const isDevelopment = true;
 
 	const fetchNextQuiz = async () => {

@@ -39,4 +39,8 @@ export default class QuizModel {
 		}
 		throw 'Cannot find question';
 	}
+
+	public getQuizId() {
+		return this.clientQuiz.quizId;
+	}
 }

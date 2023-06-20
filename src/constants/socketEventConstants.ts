@@ -6,6 +6,8 @@ export const EVENT_WAITING_TIMER = 'timer:waiting';
 
 export const EVENT_START_QUESTION = 'startQuestion';
 export const EVENT_STOP_QUESTION = 'stopQuestion';
+
+export const EVENT_START_QUIZ = 'startQuiz';
 export const EVENT_END_QUIZ = 'endQuiz';
 
 export const EVENT_SEND_CORRECT_ANSWER = 'sendCorrectOption';

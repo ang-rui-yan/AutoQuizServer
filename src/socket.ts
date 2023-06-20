@@ -1,7 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import http from 'http';
-import DataService from './services/dataService';
-import { calculatePoints } from './manager/pointsManager';
+import { calculateAndUpdatePoints } from './manager/pointsManager';
 import GlobalQuizState from './utils/GlobalQuizState';
 import { WaitingRoom } from '../../client/Trivia-Terrior/types/socketTypes';
 
@@ -78,21 +77,15 @@ export default (
 				console.log(`${publicKey} has selected ${chosenOptionId}`);
 				const currentQuestion = globalState.getCurrentQuestion();
 				if (currentQuestion) {
-					await calculatePoints(
+					await calculateAndUpdatePoints(
+						publicKey,
 						quizId,
 						questionId,
 						chosenOptionId,
 						globalState.getCurrentQuestionStartTime(),
 						globalState.getCurrentQuestionDuration(),
 						currentQuestion.points
-					).then((points) => {
-						DataService.updatePointsForCurrentQuiz(
-							publicKey,
-							quizId,
-							questionId,
-							points
-						);
-					});
+					);
 				}
 			}
 		);

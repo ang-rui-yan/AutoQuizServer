@@ -1,6 +1,27 @@
 import DataService from '../services/dataService';
 import { DateTime } from 'luxon';
 
+export const currentQuizData: { publicKey: string; points: number; numOfCorrect: number }[] = [];
+
+export const calculateAndUpdatePoints = async (
+	publicKey: string,
+	quizId: number,
+	questionId: number,
+	chosenOptionId: number,
+	startTime: luxon.DateTime,
+	timeLimitInSeconds: number,
+	points: number
+) => {
+	await calculatePoints(
+		quizId,
+		questionId,
+		chosenOptionId,
+		startTime,
+		timeLimitInSeconds,
+		points
+	).then(async (points) => await updatePoints(publicKey, quizId, points));
+};
+
 export const calculatePoints = async (
 	quizId: number,
 	questionId: number,
@@ -21,4 +42,26 @@ export const calculatePoints = async (
 	}
 
 	return earnedPoints;
+};
+
+export const updatePoints = async (publicKey: string, quizId: number, points: number) => {
+	DataService.updatePointsForCurrentQuiz(publicKey, quizId, points);
+
+	const userIndex = currentQuizData.findIndex((user) => user.publicKey == publicKey);
+	if (userIndex != -1) {
+		currentQuizData[userIndex] = {
+			publicKey: publicKey,
+			points: points + currentQuizData[userIndex].points,
+			numOfCorrect:
+				points > 0
+					? currentQuizData[userIndex].numOfCorrect + 1
+					: currentQuizData[userIndex].numOfCorrect,
+		};
+	} else {
+		currentQuizData.push({
+			publicKey: publicKey,
+			points: points,
+			numOfCorrect: points > 0 ? 1 : 0,
+		});
+	}
 };

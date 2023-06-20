@@ -16,7 +16,10 @@ import {
 	EVENT_SEND_CORRECT_ANSWER,
 	EVENT_SHOW_LEADERBOARD,
 	EVENT_END_QUIZ,
+	EVENT_START_QUIZ,
 } from '../constants/socketEventConstants';
+import { currentQuizData } from '../manager/pointsManager';
+import DataService from '../services/dataService';
 
 const WAITING_DURATION = 5;
 const DEFAULT_QUESTION_DURATION = 10;
@@ -41,9 +44,6 @@ export default class QuizController {
 		this.globalQuizState.setGameStatus(true);
 		this.io.sockets.to(EVENT_WAITING_ROOM).socketsLeave(EVENT_WAITING_ROOM);
 		console.log('Exiting waiting room status');
-
-		// DO THEY NEED TO JOIN A GAME ROOM?
-		// this.io.sockets.to(EVENT_WAITING_ROOM).socketsJoin();
 	}
 
 	// emit: start quiz
@@ -51,7 +51,7 @@ export default class QuizController {
 		this.leaveWaitingRoomStatus();
 
 		// emit the relevant quiz information
-		this.io.sockets.emit('startQuiz', this.quizModel.getQuizForClient());
+		this.io.sockets.emit(EVENT_START_QUIZ, this.quizModel.getQuizForClient());
 
 		// starts the first question
 		this.startQuestion(this.getQuestion());
@@ -158,7 +158,12 @@ export default class QuizController {
 	// emit: end quiz
 	public endQuiz() {
 		// TODO: need to emit the final leaderboard
+		this.io.sockets.emit(
+			EVENT_SHOW_LEADERBOARD,
+			currentQuizData.sort((userA, userB) => userA.points - userB.points)
+		);
 		this.io.sockets.emit(EVENT_END_QUIZ);
+		DataService.endQuiz(this.quizModel.getQuizId());
 		console.log('End quiz');
 	}
 }

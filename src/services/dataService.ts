@@ -1,6 +1,4 @@
 // makes update to the database
-
-import { QuizServerData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../prisma/client';
 
 export default class DataService {
@@ -95,14 +93,56 @@ export default class DataService {
 	public static async updatePointsForCurrentQuiz(
 		publicKey: string,
 		quizId: number,
-		questionId: number,
 		points: number
 	) {
-		console.log(`${publicKey} earned ${points} for Quiz ${quizId}, Question ${questionId}`);
+		if (points <= 0) {
+			return;
+		}
+		console.log(publicKey, quizId, points);
+		const currentQuizEntry = await prisma.user.findFirst({
+			where: {
+				publicKey: publicKey,
+			},
+			select: {
+				quizEntry: {
+					where: {
+						quizId: quizId,
+					},
+					select: {
+						quizEntryId: true,
+					},
+				},
+			},
+		});
+		console.log(currentQuizEntry);
+		if (currentQuizEntry) {
+			const currentQuizEntryId = currentQuizEntry.quizEntry[0].quizEntryId;
+			await prisma.quizEntry.update({
+				where: {
+					quizEntryId: currentQuizEntryId,
+				},
+				data: {
+					points: {
+						increment: points,
+					},
+					numOfCorrect: {
+						increment: 1,
+					},
+				},
+			});
+
+			console.log(`${publicKey} earned ${points} for Quiz ${quizId}`);
+		}
 	}
 
-	public static async updateDatabase() {
-		console.log('updated database');
-		return;
+	public static async endQuiz(quizId: number) {
+		await prisma.quiz.update({
+			where: {
+				quizId,
+			},
+			data: {
+				ended: true,
+			},
+		});
 	}
 }
