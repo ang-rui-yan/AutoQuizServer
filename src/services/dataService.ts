@@ -146,3 +146,6 @@ export default class DataService {
 		});
 	}
 }
+
+// TODO
+// Add a function to update the ranking
