@@ -1,4 +1,5 @@
 // makes update to the database
+import { CurrentQuizData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../prisma/client';
 
 export default class DataService {
@@ -89,16 +90,7 @@ export default class DataService {
 		return option.correct;
 	}
 
-	// TODO
-	public static async updatePointsForCurrentQuiz(
-		publicKey: string,
-		quizId: number,
-		points: number
-	) {
-		if (points <= 0) {
-			return;
-		}
-		console.log(publicKey, quizId, points);
+	public static async getUserQuizEntry(publicKey: string, quizId: number): Promise<number> {
 		const currentQuizEntry = await prisma.user.findFirst({
 			where: {
 				publicKey: publicKey,
@@ -114,12 +106,27 @@ export default class DataService {
 				},
 			},
 		});
-		console.log(currentQuizEntry);
 		if (currentQuizEntry) {
-			const currentQuizEntryId = currentQuizEntry.quizEntry[0].quizEntryId;
+			return currentQuizEntry.quizEntry[0].quizEntryId;
+		}
+		return -1;
+	}
+
+	// TODO
+	public static async updatePointsForCurrentQuiz(
+		publicKey: string,
+		quizId: number,
+		points: number
+	) {
+		if (points <= 0) {
+			return;
+		}
+		const quizEntryId = await this.getUserQuizEntry(publicKey, quizId);
+
+		if (quizEntryId >= 0) {
 			await prisma.quizEntry.update({
 				where: {
-					quizEntryId: currentQuizEntryId,
+					quizEntryId: quizEntryId,
 				},
 				data: {
 					points: {
@@ -145,7 +152,19 @@ export default class DataService {
 			},
 		});
 	}
-}
 
-// TODO
-// Add a function to update the ranking
+	public static async updateRankings(quizId: number, rankings: CurrentQuizData[]) {
+		rankings.sort((userA, userB) => userB.points - userA.points);
+		for (let i = 0; i < rankings.length; i++) {
+			const quizEntryId = await this.getUserQuizEntry(rankings[i].publicKey, quizId);
+			await prisma.quizEntry.update({
+				where: {
+					quizEntryId,
+				},
+				data: {
+					ranking: i + 1,
+				},
+			});
+		}
+	}
+}

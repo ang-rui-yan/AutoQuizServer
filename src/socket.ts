@@ -79,6 +79,7 @@ export default (
 				if (currentQuestion) {
 					await calculateAndUpdatePoints(
 						publicKey,
+						userName,
 						quizId,
 						questionId,
 						chosenOptionId,

@@ -1,10 +1,12 @@
+import { CurrentQuizData } from '../../../client/Trivia-Terrior/types/quizTypes';
 import DataService from '../services/dataService';
 import { DateTime } from 'luxon';
 
-export const currentQuizData: { publicKey: string; points: number; numOfCorrect: number }[] = [];
+export const currentQuizData: CurrentQuizData[] = [];
 
 export const calculateAndUpdatePoints = async (
 	publicKey: string,
+	userName: string,
 	quizId: number,
 	questionId: number,
 	chosenOptionId: number,
@@ -19,7 +21,7 @@ export const calculateAndUpdatePoints = async (
 		startTime,
 		timeLimitInSeconds,
 		points
-	).then(async (points) => await updatePoints(publicKey, quizId, points));
+	).then(async (points) => await updatePoints(publicKey, userName, quizId, points));
 };
 
 export const calculatePoints = async (
@@ -44,13 +46,19 @@ export const calculatePoints = async (
 	return earnedPoints;
 };
 
-export const updatePoints = async (publicKey: string, quizId: number, points: number) => {
+export const updatePoints = async (
+	publicKey: string,
+	userName: string,
+	quizId: number,
+	points: number
+) => {
 	DataService.updatePointsForCurrentQuiz(publicKey, quizId, points);
 
 	const userIndex = currentQuizData.findIndex((user) => user.publicKey == publicKey);
 	if (userIndex != -1) {
 		currentQuizData[userIndex] = {
 			publicKey: publicKey,
+			name: userName,
 			points: points + currentQuizData[userIndex].points,
 			numOfCorrect:
 				points > 0
@@ -60,6 +68,7 @@ export const updatePoints = async (publicKey: string, quizId: number, points: nu
 	} else {
 		currentQuizData.push({
 			publicKey: publicKey,
+			name: userName,
 			points: points,
 			numOfCorrect: points > 0 ? 1 : 0,
 		});

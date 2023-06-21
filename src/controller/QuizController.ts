@@ -151,7 +151,10 @@ export default class QuizController {
 
 	// emit: display current leaderboard
 	private displayLeaderBoard() {
-		this.io.sockets.emit(EVENT_SHOW_LEADERBOARD);
+		this.io.sockets.emit(
+			EVENT_SHOW_LEADERBOARD,
+			currentQuizData.sort((userA, userB) => userB.points - userA.points)
+		);
 		console.log('Show leaderboard');
 	}
 
@@ -160,10 +163,13 @@ export default class QuizController {
 		// TODO: need to emit the final leaderboard
 		this.io.sockets.emit(
 			EVENT_SHOW_LEADERBOARD,
-			currentQuizData.sort((userA, userB) => userA.points - userB.points)
+			currentQuizData.sort((userA, userB) => userB.points - userA.points)
 		);
 		this.io.sockets.emit(EVENT_END_QUIZ);
-		DataService.endQuiz(this.quizModel.getQuizId());
+
+		const quizId = this.quizModel.getQuizId();
+		DataService.endQuiz(quizId);
+		DataService.updateRankings(quizId, currentQuizData);
 		console.log('End quiz');
 	}
 }
