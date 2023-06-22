@@ -7,6 +7,7 @@ import { Server } from 'socket.io';
 import http from 'http';
 import QuizModel from '../models/QuizModel';
 import DataService from '../services/dataService';
+import GlobalQuizState from '../utils/GlobalQuizState';
 
 export const startQuiz = async (
 	server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
@@ -18,6 +19,7 @@ export const startQuiz = async (
 	let serverQuiz: QuizServerData;
 	let clientQuiz: QuizClientData;
 	let io: Server;
+	let globalState: GlobalQuizState = GlobalQuizState.getInstance();
 
 	// should be 10 minutes maybe
 	const FETCH_UPCOMING_QUIZ_INTERVAL = 5000;
@@ -35,8 +37,11 @@ export const startQuiz = async (
 					FETCH_UPCOMING_QUIZ_INTERVAL / 1000
 				} seconds.`
 			);
+			currentQuizId = await DataService.getUpcomingQuizId();
 			await new Promise((resolve) => setTimeout(resolve, FETCH_UPCOMING_QUIZ_INTERVAL));
 		}
+
+		globalState.setCurrentQuizId(currentQuizId);
 
 		serverQuiz = await DataService.getCurrentQuizForServer(currentQuizId);
 		clientQuiz = await DataService.getCurrentQuizForClient(currentQuizId);

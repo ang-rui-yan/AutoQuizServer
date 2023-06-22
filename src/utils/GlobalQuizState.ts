@@ -7,7 +7,8 @@ export default class GlobalQuizState {
 	private currentQuestion: QuestionServerData | null = null;
 	private currentQuestionStartTime: DateTime = DateTime.now();
 	private currentQuestionDuration: number = 0;
-	private DEFAULT_TIME_LIMIT = 60;
+	private currentQuizId: number | null = null;
+	private DEFAULT_TIME_LIMIT: number = 60;
 
 	constructor() {
 		if (GlobalQuizState.instance) {
@@ -51,5 +52,21 @@ export default class GlobalQuizState {
 
 	getCurrentQuestionDuration() {
 		return this.currentQuestionDuration;
+	}
+
+	getCurrentQuizId() {
+		return this.currentQuizId;
+	}
+
+	setCurrentQuizId(quizId: number) {
+		this.currentQuizId = quizId;
+	}
+
+	resetQuizState() {
+		this.hasGameStarted = false;
+		this.currentQuestion = null;
+		this.currentQuestionStartTime = DateTime.now();
+		this.currentQuestionDuration = 0;
+		this.currentQuizId = null;
 	}
 }

@@ -6,9 +6,11 @@ export default class DataService {
 	public static async getUpcomingQuizId(): Promise<number | null> {
 		const quiz = await prisma.quiz.findFirst({
 			where: {
-				ended: false,
-				startDateTime: {
-					gte: new Date(),
+				AND: {
+					ended: false,
+					startDateTime: {
+						gte: new Date(),
+					},
 				},
 			},
 			select: {
@@ -91,6 +93,10 @@ export default class DataService {
 	}
 
 	public static async getUserQuizEntry(publicKey: string, quizId: number): Promise<number> {
+		if (!publicKey) {
+			return -1;
+		}
+
 		const currentQuizEntry = await prisma.user.findFirst({
 			where: {
 				publicKey: publicKey,
@@ -139,7 +145,10 @@ export default class DataService {
 			});
 
 			console.log(`${publicKey} earned ${points} for Quiz ${quizId}`);
+			return;
 		}
+
+		console.log('Error: user cannot be found');
 	}
 
 	public static async endQuiz(quizId: number) {
@@ -166,5 +175,17 @@ export default class DataService {
 				},
 			});
 		}
+	}
+
+	public static async hasUserRegistered(publicKey: string, quizId: number) {
+		if (!publicKey || !quizId) {
+			return false;
+		}
+
+		let quizEntryId = await DataService.getUserQuizEntry(publicKey, quizId);
+		if (quizEntryId < 0) {
+			return false;
+		}
+		return true;
 	}
 }

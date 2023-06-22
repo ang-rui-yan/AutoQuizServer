@@ -40,6 +40,7 @@ export default class QuizController {
 		this.currentQuestionIndex = 0;
 	}
 
+	// TODO: maybe should generate a uuid of the room where they will be waiting + playing the game in
 	private leaveWaitingRoomStatus() {
 		this.globalQuizState.setGameStatus(true);
 		this.io.sockets.to(EVENT_WAITING_ROOM).socketsLeave(EVENT_WAITING_ROOM);
@@ -170,6 +171,9 @@ export default class QuizController {
 		const quizId = this.quizModel.getQuizId();
 		DataService.endQuiz(quizId);
 		DataService.updateRankings(quizId, currentQuizData);
+		this.globalQuizState.resetQuizState();
 		console.log('End quiz');
+
+		// need to make it loop back
 	}
 }
