@@ -24,7 +24,7 @@ export const startQuiz = async (
 	// should be 10 minutes maybe
 	const FETCH_UPCOMING_QUIZ_INTERVAL = 5000;
 	const WAITING_ROOM_TIME = 1000 * 60 * 0.1;
-	const DEVELOPMENT_COUNTDOWN = 1000 * 60 * 0.1;
+	const DEVELOPMENT_COUNTDOWN = 1000 * 60 * 0.2;
 	const isDevelopment = true;
 
 	const fetchNextQuiz = async () => {
@@ -88,5 +88,8 @@ export const startQuiz = async (
 		quizController.startQuiz();
 	};
 
+	// TODO: Test this
+	// while (!globalState.getGameStatus()) {
 	await fetchNextQuiz();
+	//}
 };

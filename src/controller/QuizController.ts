@@ -161,7 +161,6 @@ export default class QuizController {
 
 	// emit: end quiz
 	public endQuiz() {
-		// TODO: need to emit the final leaderboard
 		this.io.sockets.emit(
 			EVENT_SHOW_LEADERBOARD,
 			currentQuizData.sort((userA, userB) => userB.points - userA.points)
@@ -174,6 +173,6 @@ export default class QuizController {
 		this.globalQuizState.resetQuizState();
 		console.log('End quiz');
 
-		// need to make it loop back
+		// TODO: need to make it loop back
 	}
 }

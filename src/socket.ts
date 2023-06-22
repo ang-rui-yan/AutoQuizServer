@@ -50,8 +50,9 @@ export default (
 				socket.join(EVENT_WAITING_ROOM);
 				io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNT, waitingRoom);
 			}
-		}
-
+		} 
+		// TODO: If game started and they didnt register, return
+		
 		socket.on(
 			EVENT_USER_SELECTED_OPTION,
 			async (
