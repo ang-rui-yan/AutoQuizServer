@@ -10,16 +10,14 @@ import {
 	EVENT_WAITING_ROOM,
 	EVENT_WAITING_ROOM_COUNTDOWN,
 } from '../constants/socketEventConstants';
-
-// TODO: Have a file for these variables
-// should be 10 minutes maybe
-const TIME_TO_LOCK_IN_QUIZ_IN_MINUTES = 30;
-const WAITING_ROOM_TIME = 1000 * 60 * 15;
-
-const isDevelopment = true;
-const TIME_TO_LOCK_IN_QUIZ_IN_MINUTES_DEV = 1;
-const WAITING_ROOM_TIME_DEV = 1000 * 60 * 0.3;
-const DEVELOPMENT_COUNTDOWN = 1000 * 60 * 0.2;
+import {
+	DEVELOPMENT_COUNTDOWN,
+	TIME_TO_LOCK_IN_QUIZ_IN_MINUTES,
+	TIME_TO_LOCK_IN_QUIZ_IN_MINUTES_DEV,
+	WAITING_ROOM_TIME,
+	WAITING_ROOM_TIME_DEV,
+	isDevelopment,
+} from '../constants/variableConstants';
 
 const globalQuizState: GlobalQuizState = GlobalQuizState.getInstance();
 

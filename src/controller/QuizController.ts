@@ -19,9 +19,7 @@ import {
 } from '../constants/socketEventConstants';
 import { currentQuizData } from '../manager/pointsManager';
 import DataService from '../services/dataService';
-
-const WAITING_DURATION = 5;
-const DEFAULT_QUESTION_DURATION = 10;
+import { DEFAULT_QUESTION_DURATION, WAITING_DURATION } from '../constants/variableConstants';
 
 export default class QuizController {
 	private io: Server;

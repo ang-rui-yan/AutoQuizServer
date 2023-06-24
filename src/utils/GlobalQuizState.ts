@@ -14,9 +14,7 @@ import DataService from '../services/dataService';
 export default class GlobalQuizState {
 	// Singleton pattern
 	private static instance: GlobalQuizState;
-
-	// Checks if the waiting room is open
-	private isWaitingRoomOpen: boolean = false;
+	
 	// Checks if the quiz has started
 	private hasGameStarted: boolean = false;
 
@@ -164,7 +162,6 @@ export default class GlobalQuizState {
 	// Reset the quiz states after the quiz has ended
 	resetQuizState() {
 		this.hasGameStarted = false;
-		this.isWaitingRoomOpen = false;
 
 		this.resetQuiz();
 	}
