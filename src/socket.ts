@@ -36,11 +36,11 @@ export default (
 
 		// TODO: Add authentication for only registered users to participate in the quiz
 		console.log(`User ${userName}(${publicKey}) has connected!`);
-		console.log(`Game has${globalState.getGameStatus() ? ' ' : ' not '}started`);
+		console.log(`Game has${globalState.getHasGameStarted() ? ' ' : ' not '}started`);
 
-		const currentQuizId = globalState.getCurrentQuizId();
+		const currentQuizId = globalState.getQuizId();
 		// game has not started
-		if (!globalState.getGameStatus() && currentQuizId) {
+		if (!globalState.getHasGameStarted() && currentQuizId) {
 			console.log('Created waiting room.');
 			console.log('Enter waiting room status');
 			const hasAddedUser = await addUserIntoWaitingRoom(publicKey, userName, currentQuizId);
@@ -50,9 +50,9 @@ export default (
 				socket.join(EVENT_WAITING_ROOM);
 				io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNT, waitingRoom);
 			}
-		} 
+		}
 		// TODO: If game started and they didnt register, return
-		
+
 		socket.on(
 			EVENT_USER_SELECTED_OPTION,
 			async (
@@ -62,7 +62,7 @@ export default (
 				chosenOptionId: number
 			) => {
 				console.log(`${publicKey} has selected ${chosenOptionId}`);
-				const currentQuestion = globalState.getCurrentQuestion();
+				const currentQuestion = globalState.getCurrentQuestionForClient();
 				if (currentQuestion) {
 					await calculateAndUpdatePoints(
 						publicKey,

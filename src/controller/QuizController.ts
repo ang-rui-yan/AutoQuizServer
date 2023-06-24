@@ -4,7 +4,6 @@ import {
 	QuestionClientData,
 } from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
-import QuizModel from '../models/QuizModel';
 import GlobalQuizState from '../utils/GlobalQuizState';
 
 import {
@@ -26,15 +25,13 @@ const DEFAULT_QUESTION_DURATION = 10;
 
 export default class QuizController {
 	private io: Server;
-	private quizModel: QuizModel;
 	private globalTimer: GlobalTimer;
 	private globalQuizState: GlobalQuizState;
 	private currentQuestionIndex: number;
 	private hasEnded: boolean = false;
 
-	public constructor(io: Server, quizModel: QuizModel) {
+	public constructor(io: Server) {
 		this.io = io;
-		this.quizModel = quizModel;
 		this.globalTimer = GlobalTimer.getInstance();
 		this.globalQuizState = GlobalQuizState.getInstance();
 		this.currentQuestionIndex = 0;
@@ -52,21 +49,20 @@ export default class QuizController {
 		this.leaveWaitingRoomStatus();
 
 		// emit the relevant quiz information
-		this.io.sockets.emit(EVENT_START_QUIZ, this.quizModel.getQuizForClient());
+		this.io.sockets.emit(EVENT_START_QUIZ, this.globalQuizState.getQuizInformation());
 
 		// starts the first question
 		this.startQuestion(this.getQuestion());
 	}
 
 	public getQuestion() {
-		const questionForServer = this.quizModel.getQuestionForServer(this.currentQuestionIndex);
-		this.globalQuizState.setCurrentQuestion(questionForServer);
-
-		return this.quizModel.getQuestionForClient(this.currentQuestionIndex);
+		// TODO: ID or index??
+		this.globalQuizState.setCurrentQuestion(this.currentQuestionIndex);
+		return this.globalQuizState.getQuestionForClient(this.currentQuestionIndex);
 	}
 
 	private updateQuestionIndex() {
-		const questionCount = this.quizModel.getQuestionCount();
+		const questionCount = this.globalQuizState.getQuestionCount();
 		this.currentQuestionIndex++;
 		// check if the next question is the last
 		if (this.currentQuestionIndex + 1 >= questionCount) {
@@ -100,7 +96,6 @@ export default class QuizController {
 
 	// emit: question ended
 	private endQuestion() {
-		this.globalQuizState.setCurrentQuestion(null);
 		this.io.sockets.emit(EVENT_QUESTION_TIMER + ':stop');
 		this.io.sockets.emit(EVENT_STOP_QUESTION);
 
@@ -144,7 +139,7 @@ export default class QuizController {
 
 	private displayCorrectAnswer() {
 		console.log('Send correct answer');
-		const options = this.quizModel.getQuestionForServer(this.currentQuestionIndex).option;
+		const options = this.globalQuizState.getQuestionForServer(this.currentQuestionIndex).option;
 		const correctOption: OptionServerData | null =
 			options.find((option) => option.correct) || null;
 		this.io.sockets.emit(EVENT_SEND_CORRECT_ANSWER, correctOption);
@@ -167,7 +162,7 @@ export default class QuizController {
 		);
 		this.io.sockets.emit(EVENT_END_QUIZ);
 
-		const quizId = this.quizModel.getQuizId();
+		const quizId = this.globalQuizState.getQuizId();
 		DataService.endQuiz(quizId);
 		DataService.updateRankings(quizId, currentQuizData);
 		this.globalQuizState.resetQuizState();

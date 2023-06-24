@@ -12,8 +12,9 @@ export const addUserIntoWaitingRoom = async (
 ) => {
 	const hasRegistered = await DataService.hasUserRegistered(publicKey, currentQuizId);
 
-	// check if registered & handle duplicates
-	if (hasRegistered && waitingRoom.findIndex((user) => user.publicKey) < 0) {
+	if (!hasRegistered) return false;
+	else if (hasRegistered && waitingRoom.findIndex((user) => user.publicKey) < 0) {
+		// check if registered & handle duplicates
 		// Add the socket to the waiting room
 		waitingRoom.push({
 			publicKey,
@@ -23,9 +24,9 @@ export const addUserIntoWaitingRoom = async (
 
 		// Emit the current number of participants to the socket
 		console.log('Waiting room count:', waitingRoom.length);
-		return true;
 	}
-	return false;
+	// regardless they have joined before or not, if they have registered, they will be in the waiting room
+	return true;
 };
 
 export const removeUserFromWaitingRoom = (publicKey: string) => {

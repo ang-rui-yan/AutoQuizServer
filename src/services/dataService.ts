@@ -1,26 +1,48 @@
 // makes update to the database
-import { CurrentQuizData } from '../../../client/Trivia-Terrior/types/quizTypes';
+import { DateTime, Settings } from 'luxon';
+import {
+	CurrentQuizData,
+	QuizClientData,
+	QuizServerData,
+} from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../prisma/client';
 
 export default class DataService {
-	public static async getUpcomingQuizId(): Promise<number | null> {
+	public static async getUpcomingQuizInXMinutes(minutes: number): Promise<number> {
+		// Get the most upcoming quiz
+		const currentDateTime = DateTime.now().setZone('utc');
 		const quiz = await prisma.quiz.findFirst({
 			where: {
-				AND: {
-					ended: false,
-					startDateTime: {
-						gte: new Date(),
-					},
+				ended: false,
+				startDateTime: {
+					gte: currentDateTime.toJSDate(),
 				},
 			},
 			select: {
 				quizId: true,
+				startDateTime: true,
+			},
+			orderBy: {
+				startDateTime: 'asc',
 			},
 		});
-		return quiz ? quiz.quizId : null;
+
+		if (!quiz) {
+			return -1;
+		}
+
+		// check if the quiz is X minutes before now
+		const startDateTimeMinusXMinutes = DateTime.fromJSDate(quiz.startDateTime).minus({
+			minutes: minutes,
+		});
+
+		if (currentDateTime >= startDateTimeMinusXMinutes) {
+			return quiz.quizId;
+		}
+		return -1;
 	}
 
-	public static async getCurrentQuizForServer(quizId: number) {
+	public static async getCurrentQuizForServer(quizId: number): Promise<QuizServerData | null> {
 		const quiz = await prisma.quiz.findFirst({
 			where: {
 				quizId: quizId,
@@ -39,12 +61,12 @@ export default class DataService {
 		});
 
 		if (!quiz) {
-			throw '';
+			return null;
 		}
 		return quiz;
 	}
 
-	public static async getCurrentQuizForClient(quizId: number) {
+	public static async getCurrentQuizForClient(quizId: number): Promise<QuizClientData | null> {
 		const quiz = await prisma.quiz.findFirst({
 			where: {
 				quizId: quizId,
@@ -69,7 +91,7 @@ export default class DataService {
 			},
 		});
 		if (!quiz) {
-			throw '';
+			throw null;
 		}
 		return quiz;
 	}
