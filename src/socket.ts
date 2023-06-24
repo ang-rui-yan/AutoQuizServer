@@ -9,6 +9,7 @@ import {
 	EVENT_WAITING_ROOM_COUNT,
 	EVENT_USER_CONNECT,
 	EVENT_USER_DISCONNECT,
+	EVENT_QUIZ_INFORMATION,
 } from './constants/socketEventConstants';
 import { convertToString } from './utils/handleQuery';
 import {
@@ -38,10 +39,14 @@ export default (
 		console.log(`User ${userName}(${publicKey}) has connected!`);
 		console.log(`Game has${globalState.getHasGameStarted() ? ' ' : ' not '}started`);
 
-		const currentQuizId = globalState.getQuizId();
+		if (!globalState.getHasUpcomingQuiz()) {
+			console.log('No upcoming game');
+			return;
+		}
+
 		// game has not started
+		const currentQuizId = globalState.getQuizId();
 		if (!globalState.getHasGameStarted() && currentQuizId) {
-			console.log('Created waiting room.');
 			console.log('Enter waiting room status');
 			const hasAddedUser = await addUserIntoWaitingRoom(publicKey, userName, currentQuizId);
 
@@ -49,6 +54,10 @@ export default (
 			if (hasAddedUser) {
 				socket.join(EVENT_WAITING_ROOM);
 				io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNT, waitingRoom);
+				io.to(EVENT_WAITING_ROOM).emit(
+					EVENT_QUIZ_INFORMATION,
+					globalState.getQuizInformation()
+				);
 			}
 		}
 		// TODO: If game started and they didnt register, return

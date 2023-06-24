@@ -17,3 +17,6 @@ export const EVENT_SHOW_LEADERBOARD = 'showLeaderboard';
 
 export const EVENT_WAITING_ROOM = 'waitingRoom';
 export const EVENT_WAITING_ROOM_COUNT = 'waitingRoomCount';
+export const EVENT_WAITING_ROOM_COUNTDOWN = 'waitingRoomCountdown';
+
+export const EVENT_QUIZ_INFORMATION = 'quizInformation';

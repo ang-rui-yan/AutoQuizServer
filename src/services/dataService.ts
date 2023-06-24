@@ -134,6 +134,7 @@ export default class DataService {
 				},
 			},
 		});
+
 		if (currentQuizEntry) {
 			return currentQuizEntry.quizEntry[0].quizEntryId;
 		}
