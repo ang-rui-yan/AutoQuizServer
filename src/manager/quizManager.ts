@@ -11,7 +11,6 @@ import {
 	EVENT_WAITING_ROOM_COUNTDOWN,
 } from '../constants/socketEventConstants';
 import {
-	DEVELOPMENT_COUNTDOWN,
 	TIME_TO_LOCK_IN_QUIZ_IN_MINUTES,
 	TIME_TO_LOCK_IN_QUIZ_IN_MINUTES_DEV,
 	WAITING_ROOM_TIME,
@@ -57,7 +56,7 @@ export const initialiseQuizFlow = (
 	let countdownQuizStartTimerId: NodeJS.Timeout;
 	let io: Server;
 
-	let countdownToQuizStart = countdownToStart(isDevelopment);
+	let countdownToQuizStart = countdownToStart();
 	let countdownToWaitingRoomOpen =
 		countdownToQuizStart - (isDevelopment ? WAITING_ROOM_TIME_DEV : WAITING_ROOM_TIME);
 
@@ -91,11 +90,7 @@ export const initialiseQuizFlow = (
 	}, countdownToQuizStart);
 };
 
-export const countdownToStart = (isDev = false) => {
-	if (isDev) {
-		return DEVELOPMENT_COUNTDOWN;
-	}
-
+export const countdownToStart = () => {
 	if (globalQuizState.getQuizStartTime()) {
 		return globalQuizState.getQuizStartTime().diff(DateTime.now().setZone('utc')).milliseconds;
 	}

@@ -8,4 +8,3 @@ export const WAITING_ROOM_TIME = 1000 * 60 * 15;
 export const isDevelopment = true;
 export const TIME_TO_LOCK_IN_QUIZ_IN_MINUTES_DEV = 2;
 export const WAITING_ROOM_TIME_DEV = 1000 * 60 * 1;
-export const DEVELOPMENT_COUNTDOWN = 1000 * 60 * 1;
