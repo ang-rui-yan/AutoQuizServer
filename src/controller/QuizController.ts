@@ -1,57 +1,78 @@
 import { Server } from 'socket.io';
-import { QuestionClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
+import {
+	OptionServerData,
+	QuestionClientData,
+} from '../../../client/Trivia-Terrior/types/quizTypes';
 import GlobalTimer from '../utils/GlobalTimer';
-import QuizModel from '../models/QuizModel';
-import { DateTime } from 'luxon';
-import GlobalState from '../utils/GlobalQuizState';
+import GlobalQuizState from '../utils/GlobalQuizState';
 
-const WAITING_DURATION = 5;
-const DEFAULT_QUESTION_DURATION = 10;
-
-const EVENT_QUESTION_TIMER = 'timer:question';
-const EVENT_WAITING_TIMER = 'timer:waiting';
-const EVENT_START_QUESTION = 'startQuestion';
-const EVENT_STOP_QUESTION = 'stopQuestion';
-const EVENT_SHOW_LEADERBOARD = 'showLeaderboard';
-const EVENT_END_QUIZ = 'endQuiz';
+import {
+	EVENT_QUESTION_TIMER,
+	EVENT_WAITING_TIMER,
+	EVENT_START_QUESTION,
+	EVENT_WAITING_ROOM,
+	EVENT_STOP_QUESTION,
+	EVENT_SEND_CORRECT_ANSWER,
+	EVENT_SHOW_LEADERBOARD,
+	EVENT_END_QUIZ,
+	EVENT_START_QUIZ,
+} from '../constants/socketEventConstants';
+import { currentQuizData } from '../manager/pointsManager';
+import DataService from '../services/dataService';
+import { DEFAULT_QUESTION_DURATION, WAITING_DURATION } from '../constants/variableConstants';
 
 export default class QuizController {
 	private io: Server;
-	private quizModel: QuizModel;
 	private globalTimer: GlobalTimer;
-	private globalQuizState: GlobalState;
+	private globalQuizState: GlobalQuizState;
 	private currentQuestionIndex: number;
+	private hasEnded: boolean = false;
 
-	public constructor(io: Server, quizModel: QuizModel) {
+	public constructor(io: Server) {
 		this.io = io;
-		this.quizModel = quizModel;
 		this.globalTimer = GlobalTimer.getInstance();
-		this.globalQuizState = GlobalState.getInstance();
+		this.globalQuizState = GlobalQuizState.getInstance();
 		this.currentQuestionIndex = 0;
+	}
+
+	// TODO: maybe should generate a uuid of the room where they will be waiting + playing the game in
+	private leaveWaitingRoomStatus() {
+		this.globalQuizState.setGameStatus(true);
+		this.io.sockets.to(EVENT_WAITING_ROOM).socketsLeave(EVENT_WAITING_ROOM);
+		console.log('Exiting waiting room status');
 	}
 
 	// emit: start quiz
 	public startQuiz() {
+		this.leaveWaitingRoomStatus();
+
 		// emit the relevant quiz information
-		this.io.sockets.emit('startQuiz', this.quizModel.getQuizForClient());
+		this.io.sockets.emit(EVENT_START_QUIZ, this.globalQuizState.getQuizInformation());
 
 		// starts the first question
-		this.startNextQuestion();
+		this.startQuestion(this.getQuestion());
+	}
+
+	public getQuestion() {
+		// TODO: ID or index??
+		this.globalQuizState.setCurrentQuestion(this.currentQuestionIndex);
+		return this.globalQuizState.getQuestionForClient(this.currentQuestionIndex);
+	}
+
+	private updateQuestionIndex() {
+		const questionCount = this.globalQuizState.getQuestionCount();
+		this.currentQuestionIndex++;
+		// check if the next question is the last
+		if (this.currentQuestionIndex + 1 >= questionCount) {
+			this.hasEnded = true;
+			console.log('Next is the last');
+		}
 	}
 
 	private startNextQuestion() {
-		if (this.currentQuestionIndex < this.quizModel.getQuestionCount()) {
-			const question = this.quizModel.getQuestionForClient(this.currentQuestionIndex);
-			const questionForServer = this.quizModel.getQuestionForServer(
-				this.currentQuestionIndex
-			);
-			this.globalQuizState.setCurrentQuestion(questionForServer);
-			this.startQuestion(question);
-			this.currentQuestionIndex++;
-		} else {
-			// No more questions, end the quiz
-			this.endQuiz();
-		}
+		this.updateQuestionIndex();
+		const question = this.getQuestion();
+		this.startQuestion(question);
 	}
 
 	// emit: question started
@@ -73,11 +94,14 @@ export default class QuizController {
 
 	// emit: question ended
 	private endQuestion() {
-		this.globalQuizState.setCurrentQuestion(null);
 		this.io.sockets.emit(EVENT_QUESTION_TIMER + ':stop');
 		this.io.sockets.emit(EVENT_STOP_QUESTION);
 
 		console.log('End question');
+
+		// show the correct answer
+		this.displayCorrectAnswer();
+
 		// start the waiting timer
 		this.startWaitingTimer();
 
@@ -87,6 +111,11 @@ export default class QuizController {
 		// stop the waiting timer
 		this.globalTimer.on(EVENT_WAITING_TIMER + ':stop', () => {
 			this.stopWaitingTimer();
+
+			if (this.hasEnded) {
+				this.endQuiz();
+				return;
+			}
 
 			// Start the next question
 			this.startNextQuestion();
@@ -106,15 +135,37 @@ export default class QuizController {
 		console.log('Stop waiting time');
 	}
 
+	private displayCorrectAnswer() {
+		console.log('Send correct answer');
+		const options = this.globalQuizState.getQuestionForServer(this.currentQuestionIndex).option;
+		const correctOption: OptionServerData | null =
+			options.find((option) => option.correct) || null;
+		this.io.sockets.emit(EVENT_SEND_CORRECT_ANSWER, correctOption);
+	}
+
 	// emit: display current leaderboard
 	private displayLeaderBoard() {
-		this.io.sockets.emit(EVENT_SHOW_LEADERBOARD);
+		this.io.sockets.emit(
+			EVENT_SHOW_LEADERBOARD,
+			currentQuizData.sort((userA, userB) => userB.points - userA.points)
+		);
 		console.log('Show leaderboard');
 	}
 
 	// emit: end quiz
 	public endQuiz() {
+		this.io.sockets.emit(
+			EVENT_SHOW_LEADERBOARD,
+			currentQuizData.sort((userA, userB) => userB.points - userA.points)
+		);
 		this.io.sockets.emit(EVENT_END_QUIZ);
+
+		const quizId = this.globalQuizState.getQuizId();
+		DataService.endQuiz(quizId);
+		DataService.updateRankings(quizId, currentQuizData);
+		this.globalQuizState.resetQuizState();
 		console.log('End quiz');
+
+		// TODO: need to make it loop back
 	}
 }

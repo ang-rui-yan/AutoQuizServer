@@ -1,84 +1,99 @@
 import { DateTime } from 'luxon';
-import { QuizServerData, QuizClientData } from '../../../client/Trivia-Terrior/types/quizTypes';
-import QuizController from '../controller/quizController';
+import QuizController from '../controller/QuizController';
 import socketServer from '../socket';
 import { clearInterval } from 'timers';
 import { Server } from 'socket.io';
 import http from 'http';
-import QuizModel from '../models/QuizModel';
 import DataService from '../services/dataService';
+import GlobalQuizState from '../utils/GlobalQuizState';
+import {
+	EVENT_WAITING_ROOM,
+	EVENT_WAITING_ROOM_COUNTDOWN,
+} from '../constants/socketEventConstants';
+import {
+	TIME_TO_LOCK_IN_QUIZ_IN_MINUTES,
+	TIME_TO_LOCK_IN_QUIZ_IN_MINUTES_DEV,
+	WAITING_ROOM_TIME,
+	WAITING_ROOM_TIME_DEV,
+	isDevelopment,
+} from '../constants/variableConstants';
 
-export const startQuiz = async (
+const globalQuizState: GlobalQuizState = GlobalQuizState.getInstance();
+
+export const pollUntilQuizFound = async () => {
+	console.log('Polling for upcoming quiz.');
+
+	const time_before = isDevelopment
+		? TIME_TO_LOCK_IN_QUIZ_IN_MINUTES_DEV
+		: TIME_TO_LOCK_IN_QUIZ_IN_MINUTES;
+
+	await DataService.getUpcomingQuizInXMinutes(time_before).then(async (currentQuizId) => {
+		if (currentQuizId < 0) {
+			console.log('No upcoming quiz');
+			return false;
+		} else {
+			await globalQuizState.setQuiz(currentQuizId);
+
+			console.log(
+				'There is a quiz coming up:',
+				globalQuizState.getQuizStartTime().toISODate(),
+				globalQuizState.getQuizStartTime().toISOTime()
+			);
+
+			return true;
+		}
+	});
+};
+
+export const initialiseQuizFlow = (
 	server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 ) => {
-	let startDateTime: DateTime;
+	// 15 minutes before -> open waiting room
+	// 0 minutes -> close waiting room, start quiz
+	// quiz ended -> end quiz
+
 	let countdownWaitingTimerId: NodeJS.Timeout;
 	let countdownQuizStartTimerId: NodeJS.Timeout;
-	let currentQuizId: number | null;
-	let serverQuiz: QuizServerData;
-	let clientQuiz: QuizClientData;
 	let io: Server;
 
-	// should be 10 minutes maybe
-	const fetchUpcomingQuizInterval = 2000;
-	const WAITING_ROOM_TIME = 5000;
-	const isDevelopment = true;
-
-	const fetchNextQuiz = async () => {
-		console.log('Waiting for quiz.');
-		currentQuizId = await DataService.getUpcomingQuizId();
-
-		while (!currentQuizId) {
-			console.log(
-				`No upcoming quiz, polling for next in ${fetchUpcomingQuizInterval} minutes.`
-			);
-			await new Promise((resolve) => setTimeout(resolve, fetchUpcomingQuizInterval));
-		}
-
-		serverQuiz = await DataService.getCurrentQuizForServer(currentQuizId);
-		clientQuiz = await DataService.getCurrentQuizForClient(currentQuizId);
-
-		startDateTime = DateTime.fromJSDate(serverQuiz.startDateTime);
-		console.log(
-			'There is a quiz coming up:',
-			startDateTime.toISODate(),
-			startDateTime.toISOTime()
-		);
-
-		let countdownToQuizStart = countdownToStart(isDevelopment);
-		let countdownToWaitingRoomOpen = countdownToQuizStart - WAITING_ROOM_TIME;
-
-		// count till the room opens
-		console.log(`${countdownToWaitingRoomOpen} milliseconds till waiting room opens.`);
-		countdownWaitingTimerId = setInterval(() => {
-			console.log('Initialising socket server.');
-			io = socketServer(server);
-			clearInterval(countdownWaitingTimerId);
-			console.log(`${WAITING_ROOM_TIME} milliseconds till quiz starts.`);
-		}, countdownToWaitingRoomOpen);
-
-		countdownQuizStartTimerId = setInterval(() => {
-			console.log('start quiz');
-			clearInterval(countdownQuizStartTimerId);
-			startQuizController(io);
-		}, countdownToQuizStart);
-	};
-
-	const countdownToStart = (isDev = false) => {
-		if (isDev) {
-			return 5000;
-		}
-
-		if (startDateTime) {
-			return startDateTime.diff(DateTime.now()).milliseconds;
-		}
-		throw 'No datetime found!';
-	};
+	let countdownToQuizStart = countdownToStart();
+	let countdownToWaitingRoomOpen =
+		countdownToQuizStart - (isDevelopment ? WAITING_ROOM_TIME_DEV : WAITING_ROOM_TIME);
 
 	const startQuizController = (io: Server) => {
-		const quizController = new QuizController(io, new QuizModel(serverQuiz, clientQuiz));
+		const quizController = new QuizController(io);
 		quizController.startQuiz();
 	};
 
-	await fetchNextQuiz();
+	if (countdownToWaitingRoomOpen >= 0) {
+		console.log(`${countdownToWaitingRoomOpen / 60 / 1000} minutes till waiting room opens.`);
+	} else {
+		console.log('Waiting room is open.');
+	}
+
+	// count till the room opens
+	countdownWaitingTimerId = setInterval(() => {
+		console.log('Initialising socket server.');
+		io = socketServer(server);
+
+		console.log('Created waiting room.');
+		io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNTDOWN, countdownToQuizStart);
+
+		clearInterval(countdownWaitingTimerId);
+		console.log(`${countdownToQuizStart / 60 / 1000} minutes till quiz starts.`);
+	}, countdownToWaitingRoomOpen);
+
+	countdownQuizStartTimerId = setInterval(() => {
+		console.log('start quiz');
+		clearInterval(countdownQuizStartTimerId);
+		startQuizController(io);
+	}, countdownToQuizStart);
+};
+
+export const countdownToStart = () => {
+	if (globalQuizState.getQuizStartTime()) {
+		return globalQuizState.getQuizStartTime().diff(DateTime.now().setZone('utc')).milliseconds;
+	}
+
+	throw 'No datetime found!';
 };
