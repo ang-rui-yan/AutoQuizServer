@@ -1,11 +1,11 @@
 // makes update to the database
-import { DateTime, Settings } from 'luxon';
+import { DateTime } from 'luxon';
 import {
 	CurrentQuizData,
 	QuizClientData,
 	QuizServerData,
 } from '../../../client/Trivia-Terrior/types/quizTypes';
-import prisma from '../../prisma/client';
+import prisma from '../../../client/Trivia-Terrior/prisma/client';
 
 export default class DataService {
 	public static async getUpcomingQuizInXMinutes(minutes: number): Promise<number> {
@@ -119,24 +119,18 @@ export default class DataService {
 			return -1;
 		}
 
-		const currentQuizEntry = await prisma.user.findFirst({
+		const currentQuizEntry = await prisma.quizEntry.findFirst({
 			where: {
-				publicKey: publicKey,
+				publicKey,
+				quizId,
 			},
 			select: {
-				quizEntry: {
-					where: {
-						quizId: quizId,
-					},
-					select: {
-						quizEntryId: true,
-					},
-				},
+				quizEntryId: true,
 			},
 		});
 
 		if (currentQuizEntry) {
-			return currentQuizEntry.quizEntry[0].quizEntryId;
+			return currentQuizEntry.quizEntryId;
 		}
 		return -1;
 	}
