@@ -16,6 +16,7 @@ import {
 	WAITING_ROOM_TIME,
 	WAITING_ROOM_TIME_DEV,
 	isDevelopment,
+	updateQuizEntryInterval,
 } from '../constants/variableConstants';
 
 const globalQuizState: GlobalQuizState = GlobalQuizState.getInstance();
@@ -52,8 +53,6 @@ export const initialiseQuizFlow = (
 	// 0 minutes -> close waiting room, start quiz
 	// quiz ended -> end quiz
 
-	let countdownWaitingTimerId: NodeJS.Timeout;
-	let countdownQuizStartTimerId: NodeJS.Timeout;
 	let io: Server;
 
 	let countdownToQuizStart = countdownToStart();
@@ -71,21 +70,24 @@ export const initialiseQuizFlow = (
 		console.log('Waiting room is open.');
 	}
 
-	// count till the room opens
-	countdownWaitingTimerId = setInterval(() => {
-		console.log('Initialising socket server.');
-		io = socketServer(server);
+	console.log('Initialising socket server.');
+	console.log('Created waiting room.');
+	io = socketServer(server);
 
-		console.log('Created waiting room.');
-		io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNTDOWN, countdownToQuizStart);
+	io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNTDOWN, countdownToQuizStart);
+	console.log(`${countdownToQuizStart / 60 / 1000} minutes till quiz starts.`);
 
-		clearInterval(countdownWaitingTimerId);
-		console.log(`${countdownToQuizStart / 60 / 1000} minutes till quiz starts.`);
-	}, countdownToWaitingRoomOpen);
+	const updateQuizEntryTimerId = setInterval(() => {
+		console.log('Update quiz entry');
+		globalQuizState.updateQuizEntry();
+	}, updateQuizEntryInterval);
 
-	countdownQuizStartTimerId = setInterval(() => {
+	setTimeout(() => {
+		clearInterval(updateQuizEntryTimerId);
+	}, countdownToQuizStart);
+
+	setTimeout(() => {
 		console.log('start quiz');
-		clearInterval(countdownQuizStartTimerId);
 		startQuizController(io);
 	}, countdownToQuizStart);
 };

@@ -2,7 +2,11 @@
 import { DateTime } from 'luxon';
 import {
 	CurrentQuizData,
+	QuestionClientData,
+	QuestionServerData,
 	QuizClientData,
+	QuizEntry,
+	QuizInformation,
 	QuizServerData,
 } from '../../../client/Trivia-Terrior/types/quizTypes';
 import prisma from '../../../client/Trivia-Terrior/prisma/client';
@@ -42,21 +46,13 @@ export default class DataService {
 		return -1;
 	}
 
-	public static async getCurrentQuizForServer(quizId: number): Promise<QuizServerData | null> {
+	public static async getCurrentQuizInformation(quizId: number): Promise<QuizInformation | null> {
 		const quiz = await prisma.quiz.findFirst({
 			where: {
 				quizId: quizId,
 			},
 			orderBy: {
 				startDateTime: 'asc',
-			},
-			include: {
-				question: {
-					include: {
-						option: true,
-					},
-				},
-				quizEntry: true,
 			},
 		});
 
@@ -66,32 +62,46 @@ export default class DataService {
 		return quiz;
 	}
 
-	public static async getCurrentQuizForClient(quizId: number): Promise<QuizClientData | null> {
-		const quiz = await prisma.quiz.findFirst({
+	public static async getCurrentQuestionListForServer(
+		quizId: number
+	): Promise<QuestionServerData[] | null> {
+		const quiz = await prisma.question.findMany({
 			where: {
 				quizId: quizId,
 			},
-			orderBy: {
-				startDateTime: 'asc',
+			include: {
+				option: true,
+			},
+		});
+
+		if (!quiz) {
+			return null;
+		}
+		return quiz;
+	}
+
+	public static async getCurrentQuestionListForClient(
+		quizId: number
+	): Promise<QuestionClientData[] | null> {
+		const quiz = await prisma.question.findMany({
+			where: {
+				quizId: quizId,
 			},
 			include: {
-				question: {
-					include: {
-						option: {
-							select: {
-								optionId: true,
-								questionId: true,
-								quizId: true,
-								text: true,
-								correct: false,
-							},
-						},
+				option: {
+					select: {
+						optionId: true,
+						questionId: true,
+						quizId: true,
+						text: true,
+						correct: false,
 					},
 				},
 			},
 		});
+
 		if (!quiz) {
-			throw null;
+			return null;
 		}
 		return quiz;
 	}
@@ -133,6 +143,16 @@ export default class DataService {
 			return currentQuizEntry.quizEntryId;
 		}
 		return -1;
+	}
+
+	public static async getQuizEntryFor(quizId: number): Promise<QuizEntry[]> {
+		const quizEntries = await prisma.quizEntry.findMany({
+			where: {
+				quizId,
+			},
+		});
+
+		return quizEntries;
 	}
 
 	// TODO
