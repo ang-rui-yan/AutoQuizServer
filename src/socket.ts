@@ -53,7 +53,7 @@ export default (
 			// check if registered & handle duplicates
 			if (hasAddedUser) {
 				socket.join(EVENT_WAITING_ROOM);
-				io.to(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNT, waitingRoom);
+				io.sockets.in(EVENT_WAITING_ROOM).emit(EVENT_WAITING_ROOM_COUNT, waitingRoom);
 				io.to(EVENT_WAITING_ROOM).emit(
 					EVENT_QUIZ_INFORMATION,
 					globalState.getQuizInformation()
